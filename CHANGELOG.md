@@ -14,6 +14,8 @@
   `!assets/secrets.png`、`!assets/src/secrets.html` 例外并入库。
 - 新增 **E308 门禁**：文档引用的文件被 `.gitignore` 忽略时报错，专治这类「本地有、克隆没有」的引用；
   判定用一次 `git check-ignore --stdin` 批量完成（逐条起 git 进程在 Windows 上要 0.5 秒，链接多了会拖垮 pre-commit）。
+- E704 声明比对收窄到 bootstrap 生成的配置（带 `template` 标记）：手写的极简 `workflow.config.json`
+  （例如模板仓库自身只写 `aiEntries`）不再被误报「未声明技术栈」；业务项目的比对行为不变。
 
 ### 文档
 

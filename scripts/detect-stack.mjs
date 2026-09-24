@@ -112,9 +112,12 @@ async function collectChecks({ options, enabled, gaps, target, configPath }) {
     });
   }
 
-  // 声明与探测比对：声明了没用到的栈，会把无关规范带进阅读顺序与门禁
+  // 声明与探测比对：声明了没用到的栈，会把无关规范带进阅读顺序与门禁。
+  // 只比对 bootstrap 生成的配置（带 template 标记）；手工维护的极简配置
+  // （例如模板仓库自己只写 aiEntries）不代表技术栈声明，不参与比对。
   if (existsSync(configPath)) {
     const config = JSON.parse(await readFile(configPath, 'utf8'));
+    if (config.template !== 'hqc-ai-coding-work-flow') return issues;
     const declared = new Set(config.stacks ?? []);
     const detected = new Set(enabled.map((stack) => stack.id));
     const stale = [...declared].filter((id) => !detected.has(id));
