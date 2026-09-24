@@ -36,6 +36,8 @@
 
 核心原则：**同一事实只写一处**。制度层负责定义，能力层负责消费，执行层负责校验，三者不得互相复制正文内容，只能引用。
 
+![三层治理模型：制度层、能力层、执行层](assets/governance-layers.png)
+
 ## 三、六阶段流水线
 
 ```text
@@ -46,7 +48,35 @@
 
 每阶段的输入、输出、门禁，以及「什么情况下才算完成」，见 [工作流总览](docs/01-工作流总览.md)。
 
-## 四、目录结构
+![六阶段流水线：需求澄清、方案设计、实现、验证、评审、交付](assets/workflow-overview.png)
+
+## 四、多人并行怎么不打架
+
+团队规模一大，最容易失控的是四件事，模板分别给了可执行的答案：
+
+![多人并行：谁在开发、是否撞车、撞了怎么办、会不会弄坏老功能](assets/parallel-dev.png)
+
+- **谁在开发**：不维护手工台账，直接从 Git 事实推导——活跃分支、分支作者、`CODEOWNERS`、各自的需求目录。
+- **会不会撞车**：`node scripts/tasks.mjs --check` 按「最近 N 天该分支自身改过的文件」比对重叠，重叠即预警。
+- **撞了怎么办**：按文件而不是按人划分任务，契约类文件同一时间只允许一个人改；接口先行，双方按契约并行开发。
+- **会不会弄坏老功能**：动手前先跑一次基线，没基线的失败算自己引入；公共代码、接口与表结构按影响面分级回归。
+
+角色分工、分支寿命与同步节奏见 [团队协作与角色](docs/02-团队协作与角色.md)，影响面判定见 [影响面与回归防护](docs/12-影响面与回归防护.md)。
+
+## 五、写代码的规矩
+
+流程只管「怎么走」，不代替技术规范。默认技术栈的硬性要求都落在 `docs/` 里：
+
+![写代码的规矩：后端、前端、数据库、提交](assets/tech-standards.png)
+
+- **后端**：[Java / Spring 规范](docs/13-后端规范-Java-Spring.md)——分层依赖单向、事务内禁止远程调用、接口变更先改契约。
+- **前端**：[Vue 3 规范](docs/14-前端规范-Vue3.md)——组合式 API 加 TypeScript、禁用 `any`、列表页统一 `TablePage` 与 `useTableQuery`。
+- **数据库**：[数据库设计与建表规范](docs/15-数据库设计与建表规范.md)——金额 `DECIMAL`、时间 `DATETIME(3)`、唯一约束落库，改表只走 `db/migration` 脚本且脚本只增不改。
+- **提交**：[分支提交与评审](docs/05-分支提交与评审.md)——提交信息 `type(scope): subject`，分支从最新主干切，主干不直推、不强推。
+
+规范兜底、项目细化，校验入口统一为 `npm run validate`。
+
+## 六、目录结构
 
 ```text
 .
@@ -55,6 +85,7 @@
 ├── CHANGELOG.md               模板自身的版本变更
 ├── .gitignore / .gitattributes 忽略规则与换行符统一
 ├── .editorconfig              跨编辑器的基础格式约定
+├── assets/                    流程信息图：PNG 成品与 HTML 源，再生成见 assets/README.md
 ├── .githooks/                 本地提交门禁（commit-msg / pre-commit / pre-push）
 ├── .github/                   PR 模板、CODEOWNERS、CI 工作流
 ├── .gitee/                    Gitee 平台 PR 模板（与 .github 内容保持一致）
@@ -71,7 +102,7 @@
 
 最后一行是自动生成的：`AGENTS.md` 是唯一事实来源，`node scripts/sync-agent-config.mjs` 负责为 Claude Code、Cursor、Copilot 生成指向它的入口，避免多套规范各自漂移。
 
-## 五、五分钟上手
+## 七、五分钟上手
 
 ```bash
 # 1. 获取模板
@@ -89,7 +120,7 @@ node scripts/check-docs.mjs
 cat docs/00-快速开始.md
 ```
 
-## 六、接入业务项目
+## 八、接入业务项目
 
 ```bash
 # 预览将要写入的文件，不实际改动
@@ -104,7 +135,7 @@ node scripts/bootstrap.mjs --target ../your-project --stack java-springboot,vue3
 
 接入后请按 [接入清单](docs/08-接入清单.md) 逐项完成定制，尤其是 `AGENTS.md` 的技术栈章节和 `CODEOWNERS` 的负责人。
 
-## 七、文档地图
+## 九、文档地图
 
 | 文档 | 什么时候读 |
 | --- | --- |
@@ -125,14 +156,15 @@ node scripts/bootstrap.mjs --target ../your-project --stack java-springboot,vue3
 | [14-前端规范-Vue3](docs/14-前端规范-Vue3.md) | 写页面、组件、接口层或状态管理 |
 | [15-数据库设计与建表规范](docs/15-数据库设计与建表规范.md) | 建表、加字段、加索引、写迁移脚本 |
 
-## 八、维护与版本
+## 十、维护与版本
 
 - 模板遵循语义化版本，变更记录见 `CHANGELOG.md`。
+- 配图与正文是同一份事实：改流程正文时同步跑 `node scripts/build-posters.mjs` 重出配图，排版自检不通过就不会写文件。
 - 制度层变更需要至少一名维护者复核；能力层与执行层变更需要一名使用方代表复核。
 - 建议每季度回顾一次：哪些门禁从未拦下过问题（可删）、哪些问题反复绕过流程（要补门禁）。
 
 ---
 
-**模板版本**：1.4.0
+**模板版本**：1.5.0
 **维护者**：hqc 团队
 **最后更新**：2026-09-24

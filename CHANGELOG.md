@@ -4,6 +4,30 @@
 
 格式参考 [Keep a Changelog](https://keepachangelog.com/zh-CN/1.1.0/)，版本号遵循语义化版本。
 
+## [1.5.0] - 2026-09-24
+
+### 新增
+
+- **流程信息图**：`assets/` 新增四张白板手绘风格配图，并在 README 对应章节展示——
+  `workflow-overview.png`（六阶段流水线）、`governance-layers.png`（三层治理模型）、
+  `parallel-dev.png`（多人并行：谁在开发、是否撞车、撞了怎么办、会不会弄坏老功能）、
+  `tech-standards.png`（写代码的规矩：后端、前端、数据库、提交）。
+- **`scripts/build-posters.mjs`**：把 `assets/src/*.html` 渲染为 PNG 的导出脚本。支持 `--check-only`
+  排版自检（正文溢出条带或压到右侧标签框即失败并返回非 0）、`--width`、`--scale`、`--no-compress`；
+  `playwright` 为必需依赖、`sharp` 为可选压缩依赖，缺失时给出安装提示，不影响 `npm run validate` 的其余门禁。
+- **`assets/README.md`**：图片清单、风格约定、再生成步骤与维护约定。
+
+### 变更
+
+- `README.md`：新增「四、多人并行怎么不打架」与「五、写代码的规矩」两节并接入四张配图，
+  原四至八节顺延为六至十节；目录结构补充 `assets/`。
+- `.gitattributes`：`assets/**` 标记为 `linguist-documentation`，不计入仓库语言统计。
+
+### 说明
+
+- 图片只是文档的可视化摘要，不是事实来源；两者冲突时以 `docs/` 正文为准。
+- PNG 采用 128 色调色板压缩，四张合计约 820 KB。
+
 ## [1.4.0] - 2026-09-24
 
 ### 新增

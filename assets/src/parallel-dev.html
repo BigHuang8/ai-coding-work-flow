@@ -1,0 +1,82 @@
+<!doctype html><html><head><meta charset="utf-8"><style>
+* { box-sizing:border-box; margin:0; padding:0; }
+:root { --ink:#16181d; --blue:#2f6fd0; --red:#e0402f; }
+body { background:#e9e9e6; font-family:'Microsoft YaHei','SimHei',sans-serif; color:var(--ink); }
+.page { padding:22px; }
+.board { position:relative; width:1300px; padding:44px 50px 38px; background:#f6f6f3; border:16px solid #d8d8d3; border-radius:30px; box-shadow: inset 0 0 0 3px #bfbfb9, inset 0 0 70px rgba(0,0,0,.045); }
+.head { position:relative; text-align:center; padding:0 40px; }
+.title { font-size:80px; font-weight:900; letter-spacing:-2px; line-height:1.02; text-shadow:3px 3px 0 rgba(22,24,29,.10); }
+.subtitle { margin-top:12px; font-size:34px; font-weight:700; letter-spacing:1px; }
+.subtitle em { font-style:normal; color:var(--blue); }
+.rows { position:relative; margin-top:30px; }
+.row { position:relative; height:158px; margin-bottom:36px; }
+.row:last-child { margin-bottom:0; }
+.band { position:absolute; inset:0; background:var(--ink); }
+.band-in { position:absolute; inset:3.5px; background:#fdfdfb; }
+.row.alt .band-in { background:#f0f0ed; }
+.icon { position:absolute; left:46px; top:50%; transform:translateY(-50%) rotate(-2deg); }
+.nm { position:absolute; left:186px; top:50%; transform:translateY(-50%); width:440px; }
+.nm .line { display:flex; align-items:baseline; gap:10px; width:fit-content; border-bottom:7px solid var(--blue); padding-bottom:6px; transform:rotate(-.35deg); }
+.nm .n { font-size:40px; font-weight:900; color:var(--blue); }
+.nm .t { font-size:44px; font-weight:900; letter-spacing:-.5px; }
+.nm .sub { margin-top:9px; font-size:21px; font-weight:700; color:#6b6f78; }
+.tag { position:absolute; right:12px; top:50%; width:566px; transform:translateY(-50%) rotate(.45deg); background:#fff; border:3.5px solid var(--ink); border-radius:10px; padding:13px 18px; box-shadow:5px 5px 0 rgba(22,24,29,.12); }
+.tag::before { content:''; position:absolute; left:-13px; top:50%; width:17px; height:17px; margin-top:-8.5px; background:#fff; border-left:3.5px solid var(--ink); border-bottom:3.5px solid var(--ink); transform:rotate(45deg) skew(-6deg,-6deg); }
+.tag .l { font-size:24.5px; line-height:1.36; }
+.tag .l:first-child { font-weight:800; }
+.tag .l + .l { margin-top:5px; color:#3c4048; }
+.tag .k { color:var(--blue); }
+.tag .r { color:var(--red); }
+.tag .g { color:var(--red); font-weight:800; }
+.arrow { position:absolute; left:44%; bottom:-30px; transform:translateX(-50%); z-index:3; }
+.foot { margin-top:26px; text-align:center; font-size:26px; font-weight:700; color:#4a4d55; }
+.foot b { color:var(--ink); }
+.deco { position:absolute; }
+</style></head><body>
+  <div class="page"><div class="board">
+    <div class="deco" style="left:14px;top:24px"><svg width="92" height="92" viewBox="0 0 96 96" fill="none" stroke="#2f6fd0" stroke-width="4.5" stroke-linecap="round"><path d="M78 16 C 40 10, 12 34, 14 66"/><path d="M4 52 C 8 60, 12 66, 15 72 C 24 68, 32 65, 40 64"/></svg></div>
+    <div class="deco" style="right:20px;top:20px"><svg width="42" height="62" viewBox="0 0 44 66" fill="none" stroke="#e0402f" stroke-width="7" stroke-linecap="round"><path d="M22 6 C 20 20, 22 30, 20 42"/><circle cx="19" cy="56" r="4.5" fill="#e0402f" stroke="none"/></svg></div>
+    <div class="head"><h1 class="title">两个人别改同一堆文件</h1><div class="subtitle">谁在做什么、会不会撞车，都从 <em>Git 事实</em> 推导</div></div>
+    <div class="rows">
+  <div class="row ">
+    <div class="band" style="clip-path:polygon(1.3% 8%, 100% 0%, 97.4% 92%, 0% 100%)"><div class="band-in" style="clip-path:polygon(1.3% 8%, 100% 0%, 97.4% 92%, 0% 100%)"></div></div>
+    <div class="icon"><svg width="94" height="94" viewBox="0 0 24 24" fill="none" stroke="#16181d" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m16 11 2 2 4-4"/><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/></svg></div>
+    <div class="nm">
+      <div class="line"><span class="n">1.</span><span class="t">谁在开发</span></div>
+      <div class="sub">分支作者 · 需求目录 · CODEOWNERS</div>
+    </div>
+    <div class="tag"><div class="l"><b class="r">不建手工台账</b>：多人改会冲突，也没人维护</div><div class="l">看板一次看全：活跃分支、负责人、改动文件</div></div>
+    <svg class="arrow" width="54" height="46" viewBox="0 0 54 46" fill="none" stroke="#16181d" stroke-width="4.2" stroke-linecap="round" stroke-linejoin="round"><path d="M28 2 C 23 12, 33 20, 27 32"/><path d="M15 22 C 20 27, 24 31, 27 36 C 32 31, 36 26, 41 22"/></svg>
+  </div>
+  <div class="row alt">
+    <div class="band" style="clip-path:polygon(0.8% 8%, 100% 0%, 97.9% 92%, 0% 100%)"><div class="band-in" style="clip-path:polygon(0.8% 8%, 100% 0%, 97.9% 92%, 0% 100%)"></div></div>
+    <div class="icon"><svg width="94" height="94" viewBox="0 0 24 24" fill="none" stroke="#16181d" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19.07 4.93A10 10 0 0 0 6.99 3.34"/><path d="M4 6h.01"/><path d="M2.29 9.62A10 10 0 1 0 21.31 8.35"/><path d="M16.24 7.76A6 6 0 1 0 8.23 16.67"/><path d="M12 18h.01"/><path d="M17.99 11.66A6 6 0 0 1 15.77 16.67"/><circle cx="12" cy="12" r="2"/><path d="m13.41 10.59 5.66-5.66"/></svg></div>
+    <div class="nm">
+      <div class="line"><span class="n">2.</span><span class="t">是否撞车</span></div>
+      <div class="sub">node scripts/tasks.mjs --check</div>
+    </div>
+    <div class="tag"><div class="l">口径：最近 N 天<b class="k">该分支自身</b>改过的文件</div><div class="l">全是重叠？先查 --base 是否指向真正主干</div></div>
+    <svg class="arrow" width="54" height="46" viewBox="0 0 54 46" fill="none" stroke="#16181d" stroke-width="4.2" stroke-linecap="round" stroke-linejoin="round"><path d="M28 2 C 23 12, 33 20, 27 32"/><path d="M15 22 C 20 27, 24 31, 27 36 C 32 31, 36 26, 41 22"/></svg>
+  </div>
+  <div class="row ">
+    <div class="band" style="clip-path:polygon(1.3% 8%, 100% 0%, 97.4% 92%, 0% 100%)"><div class="band-in" style="clip-path:polygon(1.3% 8%, 100% 0%, 97.4% 92%, 0% 100%)"></div></div>
+    <div class="icon"><svg width="94" height="94" viewBox="0 0 24 24" fill="none" stroke="#16181d" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m11 17 2 2a1 1 0 1 0 3-3"/><path d="m14 14 2.5 2.5a1 1 0 1 0 3-3l-3.88-3.88a3 3 0 0 0-4.24 0l-.88.88a1 1 0 1 1-3-3l2.81-2.81a5.79 5.79 0 0 1 7.06-.87l.47.28a2 2 0 0 0 1.42.25L21 4"/><path d="m21 3 1 11h-2"/><path d="M3 3 2 14l6.5 6.5a1 1 0 1 0 3-3"/><path d="M3 4h8"/></svg></div>
+    <div class="nm">
+      <div class="line"><span class="n">3.</span><span class="t">撞了怎么办</span></div>
+      <div class="sub">划边界 · 接口先行</div>
+    </div>
+    <div class="tag"><div class="l">按<b class="k">文件</b>划分任务，写进各自需求目录</div><div class="l">契约类文件同一时间只允许一个人改</div></div>
+    <svg class="arrow" width="54" height="46" viewBox="0 0 54 46" fill="none" stroke="#16181d" stroke-width="4.2" stroke-linecap="round" stroke-linejoin="round"><path d="M28 2 C 23 12, 33 20, 27 32"/><path d="M15 22 C 20 27, 24 31, 27 36 C 32 31, 36 26, 41 22"/></svg>
+  </div>
+  <div class="row alt">
+    <div class="band" style="clip-path:polygon(0.8% 8%, 100% 0%, 97.9% 92%, 0% 100%)"><div class="band-in" style="clip-path:polygon(0.8% 8%, 100% 0%, 97.9% 92%, 0% 100%)"></div></div>
+    <div class="icon"><svg width="94" height="94" viewBox="0 0 24 24" fill="none" stroke="#16181d" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 14 4 9l5-5"/><path d="M4 9h10.5a5.5 5.5 0 0 1 5.5 5.5a5.5 5.5 0 0 1-5.5 5.5H11"/></svg></div>
+    <div class="nm">
+      <div class="line"><span class="n">4.</span><span class="t">会弄坏老功能吗</span></div>
+      <div class="sub">基线 · 回归 · 分级</div>
+    </div>
+    <div class="tag"><div class="l">改动前先记基线：没基线的失败算自己引入</div><div class="l">公共代码 / 接口 / 表结构按 docs/12 回归</div></div>
+    
+  </div></div>
+    <div class="foot">分支寿命 ≤ 3 个工作日 · 每天从主干同步一次 · 见 docs/02</div>
+  </div></div></body></html>

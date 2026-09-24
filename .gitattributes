@@ -27,3 +27,4 @@
 # 语言检测：文档与技能目录不计入仓库语言统计
 docs/** linguist-documentation
 skills/** linguist-documentation
+assets/** linguist-documentation
