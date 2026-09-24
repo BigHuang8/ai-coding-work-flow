@@ -5,7 +5,8 @@
 本仓库同时扮演两个角色：
 
 - **方法论**：`docs/` 说明为什么这么约定，以及团队怎么落地。
-- **工程骨架**：`skills/`、`scripts/`、`.githooks/`、`.github/`、`templates/` 可以直接复制或一键注入到任意业务项目。
+- **工程骨架**：`skills/`、`scripts/`、`.githooks/`、`templates/` 可以直接复制或一键注入到任意业务项目。
+  托管平台不绑定：CI、`CODEOWNERS`、合并请求模板同时提供 GitHub 与 GitLab 两套，接入时自动探测，见 [接入清单](docs/08-接入清单.md) 步骤 1。
 
 默认技术栈为 **Java 17 + Spring Boot 3 + Spring Cloud + MySQL 8 + Vue 3（Vite / uni-app）**，对应规范见
 [后端规范](docs/13-后端规范-Java-Spring.md)、[前端规范](docs/14-前端规范-Vue3.md)、[数据库设计与建表规范](docs/15-数据库设计与建表规范.md)；
@@ -24,6 +25,7 @@
 | 外部技能版本漂移，昨天能跑今天不能跑 | `skills-lock.json` 锁定来源与哈希，见 [技能体系](docs/03-技能体系.md) |
 | 数据库口令、API Key 被写进文档并提交 | 密钥零入库 + 提交前扫描，见 [安全与密钥](docs/07-安全与密钥.md) |
 | 规范只写在文档里，没人执行 | `.githooks/` 与 `.github/workflows/` 把规范变成「失败即阻断」的检查 |
+| 公司内网用 GitLab，模板却只带 GitHub 的 CI 与 PR 模板 | 平台产物分两套提供，接入时自动探测平台；探测错了用 `--platform` 纠正，见 [接入清单](docs/08-接入清单.md) 步骤 1 |
 | 各人用自己机器上的私有技能，换台机器就复现不了 | 只允许仓库内技能（`skills/` 与 `.agents/skills/`），`scripts/check-skills.mjs` 负责拦住越界来源，见 [技能体系](docs/03-技能体系.md) 第五节 |
 | 新人不知道从哪读起 | [快速开始](docs/00-快速开始.md) + [接入清单](docs/08-接入清单.md) |
 | 已有项目接入时被模板冲掉原有约定 | 只补不改：先体检、再按融合清单逐项合并，见 [技术栈适配](docs/10-技术栈适配.md) 第二节 |
@@ -36,7 +38,7 @@
 | --- | --- | --- | --- |
 | 制度层 | 团队约定是什么 | `AGENTS.md`、`docs/`、`templates/` | 低频，走 RFC 讨论 |
 | 能力层 | AI 用什么把事情做成 | `skills/`（自研）、`.agents/skills/`（引入） | 中频，走技能共建流程 |
-| 执行层 | 约定怎么被强制执行 | `.githooks/`、`scripts/`、`.github/workflows/` | 中频，走 PR 评审 |
+| 执行层 | 约定怎么被强制执行 | `.githooks/`、`scripts/`、平台 CI（`.github/workflows/` 或 `.gitlab-ci.yml`） | 中频，走 PR / MR 评审 |
 
 核心原则：**同一事实只写一处**。制度层负责定义，能力层负责消费，执行层负责校验，三者不得互相复制正文内容，只能引用。
 
@@ -110,8 +112,8 @@
 ├── .editorconfig              跨编辑器的基础格式约定
 ├── assets/                    流程信息图：PNG 成品与 HTML 源，再生成见 assets/README.md
 ├── .githooks/                 本地提交门禁（commit-msg / pre-commit / pre-push）
-├── .github/                   PR 模板、CODEOWNERS、CI 工作流
-├── .gitee/                    Gitee 平台 PR 模板（与 .github 内容保持一致）
+├── .github/                   GitHub 侧：CI 工作流、CODEOWNERS、PR 模板、Copilot 指令
+├── .gitee/                    Gitee 侧 PR 模板（与 .github 内容保持一致）
 ├── docs/                      工作流文档（中文，按编号排序阅读）
 │   ├── 00~12                  流程规范（总览、协作、评审、需求、影响面…）
 │   ├── 13~15                  技术规范（后端 Java/Spring、前端 Vue3、数据库与建表）
@@ -120,6 +122,7 @@
 ├── scripts/                   可执行工具：安装钩子、注入模板、文档校验、技能自检、需求建档、任务看板
 ├── stacks/                    技术栈登记表：模板覆盖与已知未覆盖的栈，供探测与自检使用
 ├── templates/project/         注入到业务项目的文件模板
+├── templates/platform/gitlab/ GitLab 侧：CI、CODEOWNERS、合并请求模板（接入时按平台注入）
 ├── skills-lock.json           外部引入技能的来源与哈希锁定
 └── （生成文件）                CLAUDE.md、.cursor/rules/、.github/copilot-instructions.md
 ```
@@ -160,10 +163,17 @@ node scripts/bootstrap.mjs --target ../your-project
 
 # 需要人工纠正技术栈识别结果时
 node scripts/bootstrap.mjs --target ../your-project --stack java-springboot,vue3
+
+# 平台产物（CI / CODEOWNERS / 合并请求模板）默认自动探测；识别不出时按 GitLab 注入
+node scripts/bootstrap.mjs --target ../your-project --platform gitlab
 ```
 
 注入后会生成两份记录：`workflow.config.json`（已启用 / 装箱 / 缺口，供脚本消费）与
 `docs/TECH_STACK.md`（人读的登记与接入记录，含**融合清单**）。
+
+平台产物只注入一套：GitLab 项目得到 `.gitlab-ci.yml` + `CODEOWNERS` + `.gitlab/merge_request_templates/`，
+GitHub 项目得到 `.github/workflows/` + `.github/CODEOWNERS` + `.github/PULL_REQUEST_TEMPLATE.md`；
+项目已有的 CI 不会被覆盖，会进融合清单要求人工追加校验步骤而非另建一套。
 
 接入后请按 [接入清单](docs/08-接入清单.md) 逐项完成定制，尤其是 `AGENTS.md` 的技术栈章节、`CODEOWNERS` 的负责人，
 以及融合清单里「已有的 AI 入口 / CI / 钩子 / validate 命令」这几项——它们不会被自动覆盖，需要人工合并。
@@ -192,7 +202,7 @@ node scripts/bootstrap.mjs --target ../your-project --stack java-springboot,vue3
 | [02-团队协作与角色](docs/02-团队协作与角色.md) | 想知道自己该做什么、谁该评审 |
 | [03-技能体系](docs/03-技能体系.md) | 想新增、引入或改造技能 |
 | [04-上下文与记忆治理](docs/04-上下文与记忆治理.md) | 想知道信息该写进哪个文件 |
-| [05-分支提交与评审](docs/05-分支提交与评审.md) | 准备提交代码或发起 PR |
+| [05-分支提交与评审](docs/05-分支提交与评审.md) | 准备提交代码或发起 PR / MR |
 | [06-验收与证据留档](docs/06-验收与证据留档.md) | 准备说「做完了」 |
 | [07-安全与密钥](docs/07-安全与密钥.md) | 涉及配置、密钥、生产环境 |
 | [08-接入清单](docs/08-接入清单.md) | 要把模板落到一个真实项目 |
@@ -213,6 +223,6 @@ node scripts/bootstrap.mjs --target ../your-project --stack java-springboot,vue3
 
 ---
 
-**模板版本**：1.8.0
+**模板版本**：1.9.0
 **维护者**：hqc 团队
 **最后更新**：2026-09-24

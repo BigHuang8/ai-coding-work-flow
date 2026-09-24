@@ -1,0 +1,29 @@
+# 代码所有者（GitLab）
+#
+# 接入项目时请把 @your-team/... 替换为真实的团队或用户名。
+# 用途：合并请求自动请求对应负责人评审，见 docs/02-团队协作与角色.md
+# 生效条件：GitLab 项目的「合并请求审批」里启用 Code Owners 审批。
+
+# 默认：所有文件都需要维护者评审
+*                       @your-team/maintainers
+
+# 制度层：规范与流程变更必须由维护者评审
+/AGENTS.md              @your-team/maintainers
+/README.md              @your-team/maintainers
+/docs/                  @your-team/maintainers
+/CHANGELOG.md           @your-team/maintainers
+
+# 能力层：技能变更
+/skills/                @your-team/maintainers
+/.agents/               @your-team/maintainers
+/skills-lock.json       @your-team/maintainers
+
+# 执行层：门禁变更必须谨慎，防止被人为放宽
+/.githooks/             @your-team/maintainers
+/.gitlab-ci.yml         @your-team/maintainers
+/.gitlab/               @your-team/maintainers
+/scripts/               @your-team/maintainers
+
+# 业务代码：按模块替换为对应负责人
+# /server/              @your-team/backend
+# /web/                 @your-team/frontend

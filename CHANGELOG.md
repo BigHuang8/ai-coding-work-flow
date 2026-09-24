@@ -4,6 +4,25 @@
 
 格式参考 [Keep a Changelog](https://keepachangelog.com/zh-CN/1.1.0/)，版本号遵循语义化版本。
 
+## [1.9.0] - 2026-09-24
+
+### 新增
+
+- **GitLab 平台产物**：新增 `templates/platform/gitlab/`，提供 `.gitlab-ci.yml`（`standards` / `commit-message` / `docs-guard` 三个 job，
+  job 名保持英文以规避 GitLab 对非 ASCII 名称的兼容问题）、仓库根 `CODEOWNERS`、`.gitlab/merge_request_templates/Default.md`，
+  与 `.github/` 那套等价，按平台二选一注入。
+- **`bootstrap` 新增 `--platform github|gitlab|auto`**：自动探测顺序为「命令行指定 → 已有 `.gitlab-ci.yml` / `.gitlab/` →
+  已有 `.github/workflows/` / `.github/CODEOWNERS` → 远程地址含 gitlab / github」，都识别不出时默认 GitLab（企业内网最常见），
+  结果写入 `workflow.config.json` 的 `platform` 字段并在输出中打印判定依据。
+
+### 变更
+
+- `--update` 不再覆盖平台产物（CI 配置、`CODEOWNERS`、合并请求模板）：这些文件团队必然会改，覆盖会丢内容。
+- `.github/copilot-instructions.md` 脱离平台条目单独托管：它是 Copilot 插件的固定路径，与代码托管平台无关。
+- 去 GitHub 耦合：`README.md`、`docs/02-团队协作与角色.md`、`docs/05-分支提交与评审.md`、`docs/08-接入清单.md`、`docs/09-常见问题.md`
+  统一表述为「合并请求（GitHub 叫 PR，GitLab 叫 MR）」，`CODEOWNERS` 路径区分为两平台，并新增 GitLab 专项 FAQ（第九篇第十八节）。
+- `stacks/README.md` 的「README 文档地图」改为纯文本：项目未必有根 `README.md`，保留链接会让接入后首次校验报断链。
+
 ## [1.8.0] - 2026-09-24
 
 ### 新增

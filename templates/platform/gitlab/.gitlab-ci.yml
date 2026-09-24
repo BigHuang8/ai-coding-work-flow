@@ -1,0 +1,54 @@
+# 规范检查流水线（GitLab CI）
+#
+# 对应的本地门禁见 .githooks/，规则说明见 docs/05-分支提交与评审.md。
+# 本项目用 GitLab 托管，CI 走本文件；模板里的 .github/workflows 是 GitHub 版本，两套只应保留实际使用的一套。
+#
+# job 名保持英文：GitLab 对非 ASCII 的 job 名兼容性不一致，中文说明写在注释与 echo 里。
+
+stages:
+  - check
+
+# 主检查：任一失败即阻断合并
+standards:
+  stage: check
+  image: node:20
+  rules:
+    - if: $CI_PIPELINE_SOURCE == "merge_request_event"
+    - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH
+  script:
+    - echo "文档与规范自检、技能检查、技术栈检查、AI 入口检查"
+    - node scripts/check-docs.mjs
+    - node scripts/check-skills.mjs
+    - node scripts/detect-stack.mjs --check
+    - node scripts/sync-agent-config.mjs --check
+    - npm run validate --if-present
+
+# 提交信息校验：只在合并请求里跑
+commit-message:
+  stage: check
+  image: node:20
+  rules:
+    - if: $CI_PIPELINE_SOURCE == "merge_request_event"
+  script:
+    - echo "校验提交信息格式 type(scope): subject"
+    - git fetch --no-tags origin "$CI_MERGE_REQUEST_TARGET_BRANCH_NAME"
+    - node scripts/check-commits.mjs "origin/$CI_MERGE_REQUEST_TARGET_BRANCH_NAME..HEAD"
+
+# 文档同步提醒：只告警不阻断，是否升级为阻断由团队决定
+docs-guard:
+  stage: check
+  image: node:20
+  allow_failure: true
+  rules:
+    - if: $CI_PIPELINE_SOURCE == "merge_request_event"
+  script:
+    - git fetch --no-tags origin "$CI_MERGE_REQUEST_TARGET_BRANCH_NAME"
+    - |
+      CHANGED=$(git diff --name-only "origin/$CI_MERGE_REQUEST_TARGET_BRANCH_NAME...HEAD")
+      CODE=$(printf '%s\n' "$CHANGED" | grep -Ev '^(docs/|spec/|skills/|scripts/|\.github/|\.gitlab/|\.githooks/)' | grep -E '\.(java|ts|tsx|js|mjs|cjs|vue|py|sql)$' || true)
+      DOCS=$(printf '%s\n' "$CHANGED" | grep -E '^(docs/|spec/|SPEC\.md|MEMORY\.md|AGENTS\.md)' || true)
+      if [ -n "$CODE" ] && [ -z "$DOCS" ]; then
+        echo "本次变更包含代码文件，但没有更新 docs/、spec/、SPEC.md、MEMORY.md 或 AGENTS.md 中的任何一项。若确实无需更新，请在合并请求描述中说明原因。"
+      else
+        echo "文档同步检查通过。"
+      fi

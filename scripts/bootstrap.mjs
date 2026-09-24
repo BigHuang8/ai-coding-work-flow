@@ -68,7 +68,7 @@ const ENTRY_LIST = [
   { from: 'stacks', to: 'stacks' },
   { from: 'scripts', to: 'scripts' },
   { from: '.githooks', to: '.githooks' },
-  { from: '.github', to: '.github' },
+  { from: '.github/copilot-instructions.md', to: '.github/copilot-instructions.md' },
   { from: '.editorconfig', to: '.editorconfig' },
   { from: '.tasksignore', to: '.tasksignore' },
   { from: 'skills-lock.json', to: 'skills-lock.json' },
@@ -111,6 +111,16 @@ const FUSION_TARGETS = [
     advice: '在现有流水线里追加：node scripts/check-docs.mjs、node scripts/check-skills.mjs、node scripts/detect-stack.mjs --check --strict'
   },
   {
+    path: 'CODEOWNERS',
+    kind: '代码所有者',
+    advice: '项目已有 GitLab 代码所有者文件：把模板规则并入现有文件，不要整份替换'
+  },
+  {
+    path: '.gitlab',
+    kind: '合并请求模板',
+    advice: '项目已有 .gitlab/ 配置：模板内容并入 .gitlab/merge_request_templates/，不要覆盖现有模板'
+  },
+  {
     path: 'Jenkinsfile',
     kind: '流水线',
     advice: '在现有流水线里追加同样的校验步骤，不要另建第二套'
@@ -138,7 +148,7 @@ const FUSION_TARGETS = [
 ];
 
 function parseArgs(argv) {
-  const options = { target: '', dryRun: false, force: false, update: false, stacks: [], trunk: '' };
+  const options = { target: '', dryRun: false, force: false, update: false, stacks: [], trunk: '', platform: 'auto' };
   for (let i = 0; i < argv.length; i += 1) {
     const arg = argv[i];
     if (arg === '--target') options.target = argv[++i] ?? '';
@@ -146,6 +156,7 @@ function parseArgs(argv) {
     else if (arg === '--force') options.force = true;
     else if (arg === '--update') options.update = true;
     else if (arg === '--trunk') options.trunk = argv[++i] ?? '';
+    else if (arg === '--platform') options.platform = (argv[++i] ?? 'auto').toLowerCase();
     else if (arg === '--stack') options.stacks = (argv[++i] ?? '').split(',').map((s) => s.trim()).filter(Boolean);
     else if (arg === '--help' || arg === '-h') options.help = true;
     else {
@@ -156,18 +167,21 @@ function parseArgs(argv) {
   return options;
 }
 
+/** 在目标仓库执行 git 命令，失败返回空串（非 Git 仓库或命令不支持时都走这里） */
+function gitIn(target, args) {
+  try {
+    return execFileSync('git', ['-C', target, ...args], {
+      encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore']
+    }).trim();
+  } catch {
+    return '';
+  }
+}
+
 /** 识别目标仓库的主干分支，写入 workflow.config.json 供 scripts/tasks.mjs（任务占用看板）使用 */
 function detectTrunk(target, explicit) {
   if (explicit) return explicit;
-  const git = (args) => {
-    try {
-      return execFileSync('git', ['-C', target, ...args], {
-        encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore']
-      }).trim();
-    } catch {
-      return '';
-    }
-  };
+  const git = (args) => gitIn(target, args);
   const remoteHead = git(['symbolic-ref', '--short', 'refs/remotes/origin/HEAD']);
   if (remoteHead) return remoteHead.replace(/^[^/]+\//, '');
 
@@ -178,6 +192,66 @@ function detectTrunk(target, explicit) {
   const current = git(['rev-parse', '--abbrev-ref', 'HEAD']);
   if (current && ['main', 'master', 'develop', 'int'].includes(current)) return current;
   return '';
+}
+
+/**
+ * 代码托管平台相关产物：CI、代码所有者、合并请求模板。
+ * 这三样各平台路径与语法都不同，注入哪套由 --platform 决定；
+ * 而 CLAUDE.md、.cursor/rules、.github/copilot-instructions.md 属于 AI 工具配置，
+ * 与代码托管在哪无关（Copilot 插件只认 .github/ 这个固定路径），所以不随平台切换。
+ */
+const PLATFORM_ENTRIES = {
+  github: [
+    { from: '.github/workflows', to: '.github/workflows' },
+    { from: '.github/CODEOWNERS', to: '.github/CODEOWNERS' },
+    { from: '.github/PULL_REQUEST_TEMPLATE.md', to: '.github/PULL_REQUEST_TEMPLATE.md' }
+  ],
+  gitlab: [
+    { from: 'templates/platform/gitlab/.gitlab-ci.yml', to: '.gitlab-ci.yml' },
+    { from: 'templates/platform/gitlab/CODEOWNERS', to: 'CODEOWNERS' },
+    { from: 'templates/platform/gitlab/.gitlab', to: '.gitlab' }
+  ]
+};
+
+/** 平台产物几乎必然被团队改过（加自己的 CI 步骤、填真实负责人），--update 时一律不覆盖 */
+const PLATFORM_KEEP = new Set([
+  'CODEOWNERS',
+  '.gitlab-ci.yml',
+  '.gitlab',
+  '.github/CODEOWNERS',
+  '.github/workflows',
+  '.github/PULL_REQUEST_TEMPLATE.md'
+]);
+
+/**
+ * 识别代码托管平台：
+ *   1. 命令行 --platform 优先；
+ *   2. 看仓库里已有的 CI / 模板文件；
+ *   3. 看 origin 地址里有没有 gitlab / github 字样；
+ *   4. 都识别不出时默认 GitLab（企业内网最常见），并在输出里说明可切换。
+ */
+async function detectPlatform(target, explicit) {
+  if (explicit && explicit !== 'auto') {
+    return { id: explicit, reason: '命令行指定' };
+  }
+  if ((await exists(path.join(target, '.gitlab-ci.yml'))) || (await isDirectory(path.join(target, '.gitlab')))) {
+    return { id: 'gitlab', reason: '已有 .gitlab-ci.yml 或 .gitlab/' };
+  }
+  if ((await isDirectory(path.join(target, '.github', 'workflows'))) || (await exists(path.join(target, '.github', 'CODEOWNERS')))) {
+    return { id: 'github', reason: '已有 .github/workflows 或 .github/CODEOWNERS' };
+  }
+
+  const remote = gitIn(target, ['remote', 'get-url', 'origin']).toLowerCase();
+  if (remote.includes('gitlab')) return { id: 'gitlab', reason: `origin 地址：${remote}` };
+  if (remote.includes('github')) return { id: 'github', reason: `origin 地址：${remote}` };
+  if (remote.includes('gitee')) {
+    return {
+      id: 'gitlab',
+      reason: `检测到 Gitee（${remote}），模板暂未提供 Gitee Go 流水线，先按 GitLab 产物注入；如需调整用 --platform`
+    };
+  }
+
+  return { id: 'gitlab', reason: '未识别出托管平台，默认 GitLab；若用 GitHub 请加 --platform github' };
 }
 
 /** 项目侧 package.json：只提供校验入口，不写 type 字段，避免改变项目已有 .js 文件的模块语义 */
@@ -383,6 +457,7 @@ async function main() {
     console.log('用法：node scripts/bootstrap.mjs --target <目标项目路径> [--dry-run] [--force] [--stack auto|none|<技术栈 id 列表>] [--trunk <主干分支>]');
     console.log('  技术栈默认 auto：自动探测项目用到的栈；none：跳过探测；也可显式指定，例如 java-springboot,vue3');
     console.log('  --update：模板已迭代，把托管文件刷新到最新版；已存在的 .env.example 与人工填写过的内容不动');
+    console.log('  --platform：代码托管平台，github | gitlab | auto（默认自动识别，识别不出按 gitlab）');
     process.exit(options.help ? 0 : 1);
   }
 
@@ -401,12 +476,20 @@ async function main() {
 
   const created = [];
   const skipped = [];
+  const platformKept = [];
   const warnings = [];
 
-  // 融合体检必须放在写入之前：否则模板刚注入的文件会被误判成「项目既有约定」
-  const fusion = await inspectExisting(target);
+  const platform = await detectPlatform(target, options.platform);
+  if (!PLATFORM_ENTRIES[platform.id]) {
+    warnings.push(`未知平台 ${platform.id}，可选 github / gitlab；本次按 github 处理`);
+    platform.id = 'github';
+  }
 
-  for (const entry of ENTRY_LIST) {
+  // 融合体检必须放在写入之前：否则模板刚注入的文件会被误判成「项目既有约定」。
+  // --update 是已接入项目的刷新，接入期早就处理过融合项，重复体检只会产生噪音。
+  const fusion = options.update ? [] : await inspectExisting(target);
+
+  for (const entry of [...ENTRY_LIST, ...(PLATFORM_ENTRIES[platform.id] ?? [])]) {
     const source = path.join(ROOT, entry.from);
     if (!(await exists(source))) {
       warnings.push(`模板文件缺失，已跳过：${entry.from}`);
@@ -421,9 +504,15 @@ async function main() {
       const display = path.relative(target, destination).split(path.sep).join('/');
 
       const destinationExists = await exists(destination);
-      const overwrite = options.force || (options.update && !FUSION_KEEP.has(entry.to));
+      const overwrite = options.force
+        || (options.update && !FUSION_KEEP.has(entry.to) && !PLATFORM_KEEP.has(entry.to));
       if (destinationExists && !overwrite) {
-        skipped.push(display);
+        // 平台产物在 --update 时被刻意保留（团队会改 CI 与负责人），单独列出避免与「已存在未覆盖」混淆
+        if (options.update && PLATFORM_KEEP.has(entry.to)) {
+          platformKept.push(display);
+        } else {
+          skipped.push(display);
+        }
         continue;
       }
 
@@ -563,6 +652,7 @@ async function main() {
     template: 'hqc-ai-coding-work-flow',
     generatedAt: new Date().toISOString().slice(0, 10),
     trunkBranch: detectTrunk(target, options.trunk),
+    platform: platform.id,
     legacyDocs,
     stacks: enabled.map((stack) => stack.id),
     availableStacks: available.map((stack) => stack.id),
@@ -637,6 +727,7 @@ async function main() {
   console.log(options.dryRun ? '预览模式（未写入任何文件）' : options.update ? '模板更新完成' : '注入完成');
   console.log(`目标项目：${target}`);
   console.log(`模板来源：${ROOT}`);
+  console.log(`托管平台：${platform.id}（${platform.reason}）`);
   console.log('');
   console.log(`${options.dryRun ? '将写入' : '已更新'} ${created.length} 个文件：`);
   for (const item of created) console.log(`  + ${item}`);
@@ -666,6 +757,11 @@ async function main() {
     console.log(`已存在，跳过 ${skipped.length} 个文件（--update 刷新托管文件，--force 全部覆盖）：`);
     for (const item of skipped) console.log(`  = ${item}`);
   }
+  if (platformKept.length > 0) {
+    console.log('');
+    console.log(`平台产物保持原样 ${platformKept.length} 个（团队必然会改，--update 不覆盖；确需重置用 --force）：`);
+    for (const item of platformKept) console.log(`  = ${item}`);
+  }
   if (warnings.length > 0) {
     console.log('');
     console.log('注意：');
@@ -678,7 +774,7 @@ async function main() {
     console.log('  1. 阅读 docs/08-接入清单.md，逐项完成定制');
     console.log('  2. 确认 workflow.config.json 的 trunkBranch 是真正的主干分支（例如 int / develop），任务看板依赖它');
     console.log('  3. 修改 AGENTS.md 中的项目概览、模块划分与命令索引');
-    console.log('  4. 修改 .github/CODEOWNERS 中的负责人');
+    console.log(`  4. 修改 ${platform.id === 'gitlab' ? 'CODEOWNERS' : '.github/CODEOWNERS'} 中的负责人`);
     console.log('  5. 安装 Git 钩子：bash scripts/install-hooks.sh（或 pwsh scripts/install-hooks.ps1）');
     console.log('  6. 补全 docs/TECH_STACK.md 里的负责人与期限（缺口未认领等于没接入）');
     console.log('  7. 运行自检：npm run validate 与 node scripts/detect-stack.mjs --check');

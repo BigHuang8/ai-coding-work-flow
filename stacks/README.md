@@ -46,7 +46,8 @@
    [技术栈适配](../docs/10-技术栈适配.md) 第三节。
 2. 在 `stacks/registry.json` 的 `stacks[]` 追加一条，填好 `guidelines` 与 `validate`。
 3. 跑 `node scripts/detect-stack.mjs --check` 确认登记表结构与规范路径都有效。
-4. 在 [README 文档地图](../README.md) 补一行，并更新 `CHANGELOG.md`。
+4. 在根 `README.md`（文档地图）补一行，并更新 `CHANGELOG.md`。
+   注：这里不写成相对链接——项目侧可能还没有 `README.md`，链接会变成断链被门禁拦下。
 
 项目侧（临时缺口，`provisional`）：
 
