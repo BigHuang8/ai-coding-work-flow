@@ -33,8 +33,9 @@ export function formatReport(issues, title = '校验报告') {
 
   const errors = issues.filter((item) => (item.level ?? 'error') === 'error');
   const warnings = issues.filter((item) => item.level === 'warn');
+  const icon = errors.length > 0 ? '❌' : '⚠️';
   const parts = [
-    `❌ ${title}：发现 ${errors.length} 个错误、${warnings.length} 个警告`,
+    `${icon} ${title}：发现 ${errors.length} 个错误、${warnings.length} 个警告`,
     '='.repeat(60),
     ''
   ];

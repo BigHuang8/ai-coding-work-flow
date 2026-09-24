@@ -36,8 +36,16 @@ fi
 
 if [ -f "$ROOT/package.json" ]; then
   if command -v npm >/dev/null 2>&1; then
-    echo "运行项目校验命令：npm run validate --if-present"
-    (cd "$ROOT" && npm run validate --if-present)
+    if command -v bash >/dev/null 2>&1; then
+      echo "运行项目校验命令：npm run validate --if-present"
+      (cd "$ROOT" && npm run validate --if-present)
+    else
+      # 精简版 Git（MinGit 等）只有 sh 没有 bash，npm 在这种 shell 下执行 scripts 会失败
+      echo "提示：当前环境没有 bash，npm 无法执行 scripts，改为直接运行 node 脚本。" >&2
+      if [ -f "$ROOT/scripts/check-docs.mjs" ]; then
+        (cd "$ROOT" && node scripts/check-docs.mjs && node scripts/check-skills.mjs && node scripts/detect-stack.mjs --check)
+      fi
+    fi
   else
     echo "提示：未找到 npm，已跳过项目校验。" >&2
   fi
