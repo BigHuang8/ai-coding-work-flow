@@ -80,7 +80,26 @@
 
 规范兜底、项目细化，校验入口统一为 `npm run validate`。
 
-## 六、目录结构
+## 六、三道质量闸门
+
+流程能跑起来，靠的是三道闸门：评审不走过场、证据能被复现、红线不被越过。
+
+![评审到底看什么：规范轴与需求轴](assets/dual-axis-review.png)
+
+评审用双轴：**规范轴**看是否合规，**需求轴**看是否真的做对，结论里的阻断项与建议项必须分开写。
+技能见 [双轴评审](skills/dual-axis-review/SKILL.md)，清单见 [分支提交与评审](docs/05-分支提交与评审.md)。
+
+![怎么证明真的做完了：证据留档](assets/evidence.png)
+
+「我觉得没问题」不是结论，**命令 + 原始输出 + 复现步骤**才是；动老代码必须先跑基线，未覆盖项要显式写出来。
+见 [验收与证据留档](docs/06-验收与证据留档.md)。
+
+![哪些东西永远别提交：密钥红线](assets/secrets.png)
+
+密钥、口令、Token、真实用户数据**零入库**，不接受例外；一旦提交过，先轮换再清理历史，删文件不算处理。
+见 [安全与密钥](docs/07-安全与密钥.md)。
+
+## 七、目录结构
 
 ```text
 .
@@ -107,7 +126,7 @@
 
 最后一行是自动生成的：`AGENTS.md` 是唯一事实来源，`node scripts/sync-agent-config.mjs` 负责为 Claude Code、Cursor、Copilot 生成指向它的入口，避免多套规范各自漂移。
 
-## 七、五分钟上手
+## 八、五分钟上手
 
 ```bash
 # 1. 获取模板
@@ -125,7 +144,7 @@ node scripts/check-docs.mjs
 cat docs/00-快速开始.md
 ```
 
-## 八、接入业务项目
+## 九、接入业务项目
 
 ![接入一个已有项目：体检、预览、注入、融合清单、认领缺口、验收](assets/onboarding.png)
 
@@ -149,7 +168,7 @@ node scripts/bootstrap.mjs --target ../your-project --stack java-springboot,vue3
 接入后请按 [接入清单](docs/08-接入清单.md) 逐项完成定制，尤其是 `AGENTS.md` 的技术栈章节、`CODEOWNERS` 的负责人，
 以及融合清单里「已有的 AI 入口 / CI / 钩子 / validate 命令」这几项——它们不会被自动覆盖，需要人工合并。
 
-## 九、技术栈对不上怎么办
+## 十、技术栈对不上怎么办
 
 项目用到的栈，模板不一定有；模板写好的规范，项目也不一定用得上。两个方向都有明确出口，不给「先随便写」留空间：
 
@@ -164,7 +183,7 @@ node scripts/bootstrap.mjs --target ../your-project --stack java-springboot,vue3
 三类清单由 `node scripts/detect-stack.mjs` 探测得出，判定标准、最小规范四要素与严格模式切换时机见
 [技术栈适配](docs/10-技术栈适配.md)。
 
-## 十、文档地图
+## 十一、文档地图
 
 | 文档 | 什么时候读 |
 | --- | --- |
@@ -185,7 +204,7 @@ node scripts/bootstrap.mjs --target ../your-project --stack java-springboot,vue3
 | [14-前端规范-Vue3](docs/14-前端规范-Vue3.md) | 写页面、组件、接口层或状态管理 |
 | [15-数据库设计与建表规范](docs/15-数据库设计与建表规范.md) | 建表、加字段、加索引、写迁移脚本 |
 
-## 十一、维护与版本
+## 十二、维护与版本
 
 - 模板遵循语义化版本，变更记录见 `CHANGELOG.md`。
 - 配图与正文是同一份事实：改流程正文时同步跑 `node scripts/build-posters.mjs` 重出配图，排版自检不通过就不会写文件。
@@ -194,6 +213,6 @@ node scripts/bootstrap.mjs --target ../your-project --stack java-springboot,vue3
 
 ---
 
-**模板版本**：1.7.0
+**模板版本**：1.8.0
 **维护者**：hqc 团队
 **最后更新**：2026-09-24
