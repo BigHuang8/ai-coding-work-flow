@@ -7,10 +7,12 @@
  *   node scripts/bootstrap.mjs --target ../your-project
  *   node scripts/bootstrap.mjs --target ../your-project --stack java-springboot,vue3
  *   node scripts/bootstrap.mjs --target ../your-project --force
+ *   node scripts/bootstrap.mjs --target ../your-project --trunk int
  *
  * 默认行为：目标已存在的文件一律跳过，不覆盖。
  */
 
+import { execFileSync } from 'node:child_process';
 import { readdir, readFile, writeFile, mkdir, cp, access, stat } from 'node:fs/promises';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -26,7 +28,6 @@ const ENTRY_LIST = [
   { from: 'templates/project/MEMORY.md', to: 'MEMORY.md' },
   { from: 'templates/project/.env.example', to: '.env.example' },
   { from: 'templates/project/docs/API_CONTRACT.md', to: 'docs/API_CONTRACT.md' },
-  { from: 'templates/project/docs/verification/README.md', to: 'docs/verification/README.md' },
   { from: 'templates/project/spec/README.md', to: 'spec/README.md' },
   { from: 'docs', to: 'docs' },
   { from: 'skills', to: 'skills' },
@@ -35,6 +36,7 @@ const ENTRY_LIST = [
   { from: '.github', to: '.github' },
   { from: '.editorconfig', to: '.editorconfig' },
   { from: '.gitattributes', to: '.gitattributes' },
+  { from: '.tasksignore', to: '.tasksignore' },
   { from: 'skills-lock.json', to: 'skills-lock.json' }
 ];
 
@@ -47,12 +49,13 @@ const STACK_COMMANDS = {
 };
 
 function parseArgs(argv) {
-  const options = { target: '', dryRun: false, force: false, stacks: [] };
+  const options = { target: '', dryRun: false, force: false, stacks: [], trunk: '' };
   for (let i = 0; i < argv.length; i += 1) {
     const arg = argv[i];
     if (arg === '--target') options.target = argv[++i] ?? '';
     else if (arg === '--dry-run') options.dryRun = true;
     else if (arg === '--force') options.force = true;
+    else if (arg === '--trunk') options.trunk = argv[++i] ?? '';
     else if (arg === '--stack') options.stacks = (argv[++i] ?? '').split(',').map((s) => s.trim()).filter(Boolean);
     else if (arg === '--help' || arg === '-h') options.help = true;
     else {
@@ -61,6 +64,26 @@ function parseArgs(argv) {
     }
   }
   return options;
+}
+
+/** 识别目标仓库的主干分支，写入 workflow.config.json 供 scripts/tasks.mjs（任务占用看板）使用 */
+function detectTrunk(target, explicit) {
+  if (explicit) return explicit;
+  const git = (args) => {
+    try {
+      return execFileSync('git', ['-C', target, ...args], {
+        encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore']
+      }).trim();
+    } catch {
+      return '';
+    }
+  };
+  const remoteHead = git(['symbolic-ref', '--short', 'refs/remotes/origin/HEAD']);
+  if (remoteHead) return remoteHead;
+  for (const candidate of ['main', 'master']) {
+    if (git(['rev-parse', '--verify', '--quiet', candidate])) return candidate;
+  }
+  return '';
 }
 
 async function exists(target) {
@@ -99,7 +122,7 @@ async function main() {
   const options = parseArgs(process.argv.slice(2));
 
   if (options.help || !options.target) {
-    console.log('用法：node scripts/bootstrap.mjs --target <目标项目路径> [--dry-run] [--force] [--stack java-springboot,vue3]');
+    console.log('用法：node scripts/bootstrap.mjs --target <目标项目路径> [--dry-run] [--force] [--stack java-springboot,vue3] [--trunk <主干分支>]');
     process.exit(options.help ? 0 : 1);
   }
 
@@ -179,6 +202,7 @@ async function main() {
     const config = {
       template: 'hqc-ai-coding-work-flow',
       generatedAt: new Date().toISOString().slice(0, 10),
+      trunkBranch: detectTrunk(target, options.trunk),
       stacks: options.stacks,
       suggestedValidate: Object.fromEntries(
         options.stacks.filter((stack) => STACK_COMMANDS[stack]).map((stack) => [stack, STACK_COMMANDS[stack]])
@@ -193,12 +217,33 @@ async function main() {
     }
   }
 
+  // 按目标项目自己的 AGENTS.md 重新生成各 AI 工具入口，否则注入后 CI 会立刻失败
+  const synced = [];
+  if (!options.dryRun) {
+    const syncScript = path.join(target, 'scripts', 'sync-agent-config.mjs');
+    if (await exists(syncScript)) {
+      try {
+        const output = execFileSync(process.execPath, [syncScript], {
+          cwd: target, encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe']
+        });
+        for (const line of output.split(/\r?\n/).filter(Boolean)) synced.push(line);
+      } catch {
+        warnings.push('未能自动生成 AI 工具入口，请手动运行：node scripts/sync-agent-config.mjs');
+      }
+    }
+  }
+
   console.log(options.dryRun ? '预览模式（未写入任何文件）' : '注入完成');
   console.log(`目标项目：${target}`);
   console.log(`模板来源：${ROOT}`);
   console.log('');
   console.log(`将写入 ${created.length} 个文件：`);
   for (const item of created) console.log(`  + ${item}`);
+  if (synced.length > 0) {
+    console.log('');
+    console.log('已按目标项目的 AGENTS.md 生成 AI 工具入口：');
+    for (const item of synced) console.log(`  ~ ${item}`);
+  }
   if (skipped.length > 0) {
     console.log('');
     console.log(`已存在，跳过 ${skipped.length} 个文件（使用 --force 可覆盖）：`);
@@ -214,11 +259,11 @@ async function main() {
     console.log('');
     console.log('下一步：');
     console.log('  1. 阅读 docs/08-接入清单.md，逐项完成定制');
-    console.log('  2. 修改 AGENTS.md 中的项目概览、模块划分与命令索引');
-    console.log('  3. 修改 .github/CODEOWNERS 中的负责人');
-    console.log('  4. 安装 Git 钩子：bash scripts/install-hooks.sh（或 pwsh scripts/install-hooks.ps1）');
-    console.log('  5. 生成各 AI 工具入口：node scripts/sync-agent-config.mjs');
-    console.log('  6. 运行自检：node scripts/check-docs.mjs');
+    console.log('  2. 确认 workflow.config.json 的 trunkBranch 是真正的主干分支（例如 int / develop），任务看板依赖它');
+    console.log('  3. 修改 AGENTS.md 中的项目概览、模块划分与命令索引');
+    console.log('  4. 修改 .github/CODEOWNERS 中的负责人');
+    console.log('  5. 安装 Git 钩子：bash scripts/install-hooks.sh（或 pwsh scripts/install-hooks.ps1）');
+    console.log('  6. 运行自检：node scripts/check-docs.mjs 与 node scripts/sync-agent-config.mjs --check');
   }
 }
 

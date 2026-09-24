@@ -20,6 +20,8 @@
 | 收到 PRD / 原型 / 需求文档 | `docs/11-需求接收与拆解.md` | `skills/requirement-intake/SKILL.md`、`spec/` 下同类需求 |
 | 只有口头需求，无正式文档 | `skills/spec-writer/SKILL.md` | `templates/project/SPEC.md` |
 | 写业务代码 | 对应技术栈规范（见 `docs/10-技术栈适配.md`） | `docs/04-上下文与记忆治理.md` |
+| 改公共代码 / 接口 / 表结构 | `docs/12-影响面与回归防护.md` | `skills/impact-analysis/SKILL.md` |
+| 多人并行开发 | `docs/02-团队协作与角色.md` 第四节 | `node scripts/tasks.mjs` |
 | 修 Bug | `skills/flow-orchestrator/SKILL.md` 的排障路径 | `MEMORY.md` 中同类历史修复 |
 | 提交 / 评审 | `docs/05-分支提交与评审.md` | `skills/dual-axis-review/SKILL.md` |
 | 交付 / 上线 | `docs/06-验收与证据留档.md`、`docs/07-安全与密钥.md` | 项目部署文档 |
@@ -50,6 +52,7 @@
 4. 接口或数据结构变更时，同步更新契约文档与两端的类型定义，保持单一来源。
 5. 完成后同步更新受影响的文档：`SPEC.md`、`MEMORY.md`、`docs/`、`CHANGELOG.md` 中至少一处必须反映变更。
 6. 提交前运行对应模块的校验命令（见第六节）。
+7. 改公共代码、接口、数据结构或配置前，先记录测试基线并反查调用方；改动后做回归验证并与基线对比。
 
 ### 禁止
 
@@ -83,6 +86,7 @@
 | 新建需求目录 | `node scripts/new-spec.mjs --title "客户列表导出" --with-artifacts --with-verification` |
 | 注入到业务项目 | `node scripts/bootstrap.mjs --target ../your-project` |
 | 同步多 AI 工具配置 | `node scripts/sync-agent-config.mjs` |
+| 查看任务占用与冲突 | `node scripts/tasks.mjs`（`--check` 只看当前分支） |
 | 模板自身校验 | `npm run validate` |
 
 ## 七、技能索引
@@ -92,6 +96,7 @@
 | 技能 | 用途 |
 | --- | --- |
 | `flow-orchestrator` | 编排六阶段流程，判断当前处于哪一步、下一步做什么 |
+| `impact-analysis` | 反查调用方、评定改动级别、记录基线与回归验证 |
 | `requirement-intake` | 接收 PRD / 原型，归档原件并逐条标注技术实现 |
 | `spec-writer` | 把口头需求变成可验收的 `SPEC.md` 条目与 `spec/` 留档 |
 | `dual-axis-review` | 双轴评审：规范轴（是否合规）与需求轴（是否做对） |

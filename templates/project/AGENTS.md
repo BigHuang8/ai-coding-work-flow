@@ -34,6 +34,8 @@
 | <前端模块> | `docs/<前端规范>.md` | `docs/API_CONTRACT.md` |
 | <后端模块> | `docs/<后端规范>.md` | `docs/API_CONTRACT.md` |
 | 提交 / 评审 | `docs/05-分支提交与评审.md` | `skills/dual-axis-review/SKILL.md` |
+| 多人并行开发 | `docs/02-团队协作与角色.md` 第四节 | `node scripts/tasks.mjs` |
+| 改公共代码 / 接口 / 表结构 | `docs/12-影响面与回归防护.md` | `skills/impact-analysis/SKILL.md` |
 | 交付 / 上线 | `docs/06-验收与证据留档.md`、`docs/07-安全与密钥.md` | `DEPLOYMENT_GUIDE.md` |
 
 ## 四、文档职责边界（单一事实来源）
@@ -59,6 +61,7 @@
 3. 新功能或 Bug 修复优先先写会失败的测试。
 4. 接口或数据结构变更时，同步更新 `docs/API_CONTRACT.md` 与两端的类型定义。
 5. 提交前运行对应模块的校验命令（见第七节）。
+6. 改公共代码、接口、数据结构或配置前，先记录测试基线并反查调用方；改动后做回归验证并与基线对比。
 
 ### 禁止
 
@@ -89,6 +92,7 @@
 | 后端测试 | `<命令>` |
 | 完整校验 | `npm run validate` |
 | 文档自检 | `node scripts/check-docs.mjs` |
+| 查看任务占用与冲突 | `node scripts/tasks.mjs`（`--check` 只看当前分支） |
 | 新建需求目录 | `node scripts/new-spec.mjs --title "<主题>" --with-artifacts --with-verification` |
 
 ## 八、提交规范

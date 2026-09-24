@@ -113,6 +113,7 @@ node scripts/bootstrap.mjs --target ../your-project --stack java-springboot,vue3
 | [09-常见问题](docs/09-常见问题.md) | 流程卡住了 |
 | [10-技术栈适配](docs/10-技术栈适配.md) | 项目不是 Vue / Java，需要换适配 |
 | [11-需求接收与拆解](docs/11-需求接收与拆解.md) | 收到 PRD 和原型图，不知道原件放哪、技术实现写哪 |
+| [12-影响面与回归防护](docs/12-影响面与回归防护.md) | 担心改了东西弄坏已有功能 |
 
 ## 八、维护与版本
 
