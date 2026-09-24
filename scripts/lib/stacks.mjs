@@ -25,6 +25,9 @@ const MAX_FILE_BYTES = 512 * 1024;
 
 const BUILD_FILES = new Set(['package.json', 'pom.xml', 'build.gradle', 'build.gradle.kts']);
 
+/** SQL 方言特征扫描的总预算，避免大仓库拖慢探测 */
+const MAX_SQL_BYTES = 256 * 1024;
+
 export async function loadRegistry(root) {
   const file = path.join(root, 'stacks', 'registry.json');
   return { registry: JSON.parse(await readFile(file, 'utf8')), file };
@@ -67,13 +70,21 @@ async function readText(target, file) {
   }
 }
 
-/** 汇总探测上下文：文件清单、npm 依赖集合、构建文件文本 */
+/** 汇总探测上下文：文件清单、npm 依赖集合、构建文件文本、SQL 文本 */
 export async function buildContext(target, files) {
   const packageDeps = new Set();
   let buildText = '';
+  let sqlText = '';
 
   for (const file of files) {
     const base = path.posix.basename(file).toLowerCase();
+
+    // SQL 文件用于判定数据库方言：只看关键字特征，不看文件名，避免「有 .sql 就是 MySQL」的误判
+    if (base.endsWith('.sql')) {
+      if (sqlText.length < MAX_SQL_BYTES) sqlText += (await readText(target, file)).toLowerCase();
+      continue;
+    }
+
     if (!BUILD_FILES.has(base)) continue;
 
     if (base === 'package.json') {
@@ -90,7 +101,7 @@ export async function buildContext(target, files) {
     }
   }
 
-  return { files, packageDeps, buildText };
+  return { files, packageDeps, buildText, sqlText };
 }
 
 /** 探测规则匹配：返回命中的文件路径，未命中返回空串 */
@@ -134,6 +145,9 @@ export function matchStack(stack, context) {
   }
   for (const keyword of stack.detect?.pomKeywords ?? []) {
     if (context.buildText.includes(keyword.toLowerCase())) evidence.push(`构建文件关键字 ${keyword}`);
+  }
+  for (const keyword of stack.detect?.sqlKeywords ?? []) {
+    if ((context.sqlText ?? '').includes(keyword.toLowerCase())) evidence.push(`SQL 方言特征 ${keyword}`);
   }
 
   return evidence;

@@ -52,8 +52,9 @@
       "guidelines": ["docs/15-数据库设计与建表规范.md"],
       "validate": "无自动命令，按 15 号文档的评审清单人工核对",
       "detect": {
-        "files": ["**/db", "**/*.sql"],
-        "pomKeywords": ["mysql-connector"]
+        "pomKeywords": ["mysql-connector"],
+        "packageDeps": ["mysql2", "mysql"],
+        "sqlKeywords": ["auto_increment", "engine=innodb", "utf8mb4"]
       }
     },
     {
@@ -104,7 +105,8 @@
       "slot": "data",
       "detect": {
         "packageDeps": ["pg", "postgres", "prisma", "typeorm"],
-        "pomKeywords": ["postgresql"]
+        "pomKeywords": ["postgresql"],
+        "sqlKeywords": ["bigserial", "create extension", "jsonb"]
       }
     }
   ],

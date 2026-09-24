@@ -32,6 +32,28 @@ const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 
 const SKIP_DIRS = new Set(['.git', 'node_modules', 'dist', 'target', 'build', 'coverage', '.cache']);
 
+/**
+ * 融合类文件：项目往往会自己维护，即使 --update 也不覆盖，只提示合并。
+ * 其余托管文件（docs、skills、scripts、.githooks、.github、assets 等）在 --update 时按模板最新版刷新。
+ */
+const FUSION_KEEP = new Set(['.env.example']);
+
+/**
+ * 项目必然要改的文件：--update 时若已把占位内容替换掉，就判定为「已定制」并保留，
+ * 避免刷新模板时冲掉项目概览、需求与决策记录。
+ */
+const CUSTOMIZABLE = new Set(['AGENTS.md', 'SPEC.md', 'MEMORY.md']);
+
+/** 模板占位符形如 <项目名>、<一句话说明这个项目做什么>；替换干净了就说明项目已经改过 */
+async function looksCustomized(target, relative) {
+  try {
+    const content = await readFile(path.join(target, relative), 'utf8');
+    return !/<[\u4e00-\u9fff][^>\n]{0,40}>/.test(content);
+  } catch {
+    return false;
+  }
+}
+
 /** 注入清单：from 相对模板仓库，to 相对目标项目 */
 const ENTRY_LIST = [
   { from: 'templates/project/AGENTS.md', to: 'AGENTS.md' },
@@ -116,12 +138,13 @@ const FUSION_TARGETS = [
 ];
 
 function parseArgs(argv) {
-  const options = { target: '', dryRun: false, force: false, stacks: [], trunk: '' };
+  const options = { target: '', dryRun: false, force: false, update: false, stacks: [], trunk: '' };
   for (let i = 0; i < argv.length; i += 1) {
     const arg = argv[i];
     if (arg === '--target') options.target = argv[++i] ?? '';
     else if (arg === '--dry-run') options.dryRun = true;
     else if (arg === '--force') options.force = true;
+    else if (arg === '--update') options.update = true;
     else if (arg === '--trunk') options.trunk = argv[++i] ?? '';
     else if (arg === '--stack') options.stacks = (argv[++i] ?? '').split(',').map((s) => s.trim()).filter(Boolean);
     else if (arg === '--help' || arg === '-h') options.help = true;
@@ -203,16 +226,31 @@ async function isDirectory(target) {
 }
 
 /** 接入体检：项目里已有哪些约定，需要人工融合而不是覆盖 */
+const TEMPLATE_WORKFLOWS = new Set(['docs-guard.yml', 'standards.yml']);
+
+/** 带生成标记的入口文件由模板维护，不属于项目既有约定 */
+async function isTemplateGenerated(full) {
+  const info = await stat(full).catch(() => null);
+  if (!info?.isFile()) return false;
+  const content = await readFile(full, 'utf8').catch(() => '');
+  return content.includes('本文件由 node scripts/sync-agent-config.mjs 生成');
+}
+
 async function inspectExisting(target) {
   const items = [];
 
   for (const item of FUSION_TARGETS) {
-    if (await exists(path.join(target, item.path))) items.push({ ...item });
+    const full = path.join(target, item.path);
+    if (!(await exists(full))) continue;
+    // 模板自己生成的入口文件不算「项目既有约定」，否则重跑时会把上一轮的产物报成历史包袱
+    if (await isTemplateGenerated(full)) continue;
+    items.push({ ...item });
   }
 
   const workflows = path.join(target, '.github', 'workflows');
   if (await isDirectory(workflows)) {
-    const files = (await readdir(workflows).catch(() => [])).filter((name) => /\.ya?ml$/.test(name));
+    const files = (await readdir(workflows).catch(() => []))
+      .filter((name) => /\.ya?ml$/.test(name) && !TEMPLATE_WORKFLOWS.has(name));
     if (files.length > 0 && !items.some((item) => item.kind === '流水线')) {
       items.push({
         path: `.github/workflows（已有 ${files.length} 个文件）`,
@@ -226,7 +264,8 @@ async function inspectExisting(target) {
   if (await exists(pkgPath)) {
     try {
       const pkg = JSON.parse(await readFile(pkgPath, 'utf8'));
-      if (pkg.scripts?.validate) {
+      const templateValidate = JSON.parse(await readFile(path.join(ROOT, 'package.json'), 'utf8')).scripts?.validate;
+      if (pkg.scripts?.validate && pkg.scripts.validate !== templateValidate) {
         items.push({
           path: 'package.json 的 scripts.validate',
           kind: '命令',
@@ -343,6 +382,7 @@ async function main() {
   if (options.help || !options.target) {
     console.log('用法：node scripts/bootstrap.mjs --target <目标项目路径> [--dry-run] [--force] [--stack auto|none|<技术栈 id 列表>] [--trunk <主干分支>]');
     console.log('  技术栈默认 auto：自动探测项目用到的栈；none：跳过探测；也可显式指定，例如 java-springboot,vue3');
+    console.log('  --update：模板已迭代，把托管文件刷新到最新版；已存在的 .env.example 与人工填写过的内容不动');
     process.exit(options.help ? 0 : 1);
   }
 
@@ -381,9 +421,17 @@ async function main() {
       const display = path.relative(target, destination).split(path.sep).join('/');
 
       const destinationExists = await exists(destination);
-      if (destinationExists && !options.force) {
+      const overwrite = options.force || (options.update && !FUSION_KEEP.has(entry.to));
+      if (destinationExists && !overwrite) {
         skipped.push(display);
         continue;
+      }
+
+      if (destinationExists && options.update && !options.force && CUSTOMIZABLE.has(display)) {
+        if (await looksCustomized(target, display)) {
+          skipped.push(`${display}（已定制，保留项目版本）`);
+          continue;
+        }
       }
 
       if (options.dryRun) {
@@ -402,12 +450,17 @@ async function main() {
   const gitignoreTarget = path.join(target, '.gitignore');
   if (await exists(gitignoreSource)) {
     if (await exists(gitignoreTarget)) {
-      const extra = path.join(target, '.gitignore.workflow');
-      if (!options.dryRun) {
-        await cp(gitignoreSource, extra);
+      if (options.update) {
+        // 已接入项目的刷新：不重复生成待合并文件，缺规则时由门禁兜底
+        skipped.push('.gitignore');
+      } else {
+        const extra = path.join(target, '.gitignore.workflow');
+        if (!options.dryRun) {
+          await cp(gitignoreSource, extra);
+        }
+        warnings.push('目标已存在 .gitignore，未覆盖；模板规则写入 .gitignore.workflow，请手动合并后删除该文件');
+        created.push('.gitignore.workflow');
       }
-      warnings.push('目标已存在 .gitignore，未覆盖；模板规则写入 .gitignore.workflow，请手动合并后删除该文件');
-      created.push('.gitignore.workflow');
     } else if (options.dryRun) {
       created.push('.gitignore');
     } else {
@@ -421,12 +474,16 @@ async function main() {
   const attrTarget = path.join(target, '.gitattributes');
   if (await exists(attrSource)) {
     if (await exists(attrTarget)) {
-      const extra = path.join(target, '.gitattributes.workflow');
-      if (!options.dryRun) {
-        await cp(attrSource, extra);
+      if (options.update) {
+        skipped.push('.gitattributes');
+      } else {
+        const extra = path.join(target, '.gitattributes.workflow');
+        if (!options.dryRun) {
+          await cp(attrSource, extra);
+        }
+        warnings.push('目标已存在 .gitattributes，未覆盖；模板规则写入 .gitattributes.workflow。必须合并：缺少 .githooks/* eol=lf 时，core.autocrlf=true 的机器会把钩子脚本转成 CRLF，钩子在 Linux / macOS 上直接失效');
+        created.push('.gitattributes.workflow');
       }
-      warnings.push('目标已存在 .gitattributes，未覆盖；模板规则写入 .gitattributes.workflow。必须合并：缺少 .githooks/* eol=lf 时，core.autocrlf=true 的机器会把钩子脚本转成 CRLF，钩子在 Linux / macOS 上直接失效');
-      created.push('.gitattributes.workflow');
     } else if (options.dryRun) {
       created.push('.gitattributes');
     } else {
@@ -440,12 +497,16 @@ async function main() {
   const pkgTarget = path.join(target, 'package.json');
   if (await exists(pkgSource)) {
     if (await exists(pkgTarget)) {
-      const extra = path.join(target, '.package.json.workflow');
-      if (!options.dryRun) {
-        await cp(pkgSource, extra);
+      if (options.update) {
+        skipped.push('package.json');
+      } else {
+        const extra = path.join(target, '.package.json.workflow');
+        if (!options.dryRun) {
+          await cp(pkgSource, extra);
+        }
+        warnings.push('目标已存在 package.json，未覆盖；模板校验脚本写入 .package.json.workflow，请把 scripts 合并进现有文件后删除该文件');
+        created.push('.package.json.workflow');
       }
-      warnings.push('目标已存在 package.json，未覆盖；模板校验脚本写入 .package.json.workflow，请把 scripts 合并进现有文件后删除该文件');
-      created.push('.package.json.workflow');
     } else if (options.dryRun) {
       created.push('package.json');
     } else {
@@ -486,7 +547,17 @@ async function main() {
     available = available.filter((item) => item.id !== id);
   }
 
-  const legacyDocs = await scanLegacyDocs(target);
+  let legacyDocs = await scanLegacyDocs(target);
+  const previousConfigPath = path.join(target, 'workflow.config.json');
+  if ((await exists(previousConfigPath)) && !options.force) {
+    // 用户可能手工增删过豁免清单，非 --force 时保留既有内容，避免每次重跑都被覆盖
+    try {
+      const previous = JSON.parse(await readFile(previousConfigPath, 'utf8'));
+      if (Array.isArray(previous.legacyDocs)) legacyDocs = previous.legacyDocs.map(String);
+    } catch {
+      // 旧配置读不动时按本次扫描结果写入
+    }
+  }
 
   const config = {
     template: 'hqc-ai-coding-work-flow',
@@ -531,6 +602,13 @@ async function main() {
   });
 
   if ((await exists(techStackPath)) && !options.force) {
+    if (options.update) {
+      // 记录文件可能已被人填过负责人与期限，不直接覆盖，但要能发现「探测结果变了」这件事
+      const current = await readFile(techStackPath, 'utf8');
+      if (current.trim() !== techStackDoc.trim()) {
+        warnings.push('docs/TECH_STACK.md 与本次探测结果不一致：请手动更新对应表格，或用 --force 重新生成（缺口表的负责人与期限需要重填）');
+      }
+    }
     skipped.push('docs/TECH_STACK.md');
   } else if (options.dryRun) {
     created.push(`docs/TECH_STACK.md${(await exists(techStackPath)) ? '（将覆盖）' : ''}`);
@@ -556,11 +634,11 @@ async function main() {
     }
   }
 
-  console.log(options.dryRun ? '预览模式（未写入任何文件）' : '注入完成');
+  console.log(options.dryRun ? '预览模式（未写入任何文件）' : options.update ? '模板更新完成' : '注入完成');
   console.log(`目标项目：${target}`);
   console.log(`模板来源：${ROOT}`);
   console.log('');
-  console.log(`将写入 ${created.length} 个文件：`);
+  console.log(`${options.dryRun ? '将写入' : '已更新'} ${created.length} 个文件：`);
   for (const item of created) console.log(`  + ${item}`);
 
   console.log('');
@@ -585,7 +663,7 @@ async function main() {
   }
   if (skipped.length > 0) {
     console.log('');
-    console.log(`已存在，跳过 ${skipped.length} 个文件（使用 --force 可覆盖）：`);
+    console.log(`已存在，跳过 ${skipped.length} 个文件（--update 刷新托管文件，--force 全部覆盖）：`);
     for (const item of skipped) console.log(`  = ${item}`);
   }
   if (warnings.length > 0) {
