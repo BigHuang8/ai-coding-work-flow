@@ -18,6 +18,7 @@
   - 前端：<例如 Vue 3 + Vite / uni-app>
   - 后端：<例如 Spring Boot 3 + MyBatis Plus>
   - 数据库：<例如 MySQL 8.0>
+- 技术栈登记：见 `docs/TECH_STACK.md`（已启用 / 装箱未启用 / 缺口三类，由 `node scripts/detect-stack.mjs` 探测）
 - 模块划分（用于 `scope` 取值）：
 
 | scope | 目录 | 说明 |
@@ -39,6 +40,8 @@
 | 多人并行开发 | `docs/02-团队协作与角色.md` 第四节 | `node scripts/tasks.mjs` |
 | 改公共代码 / 接口 / 表结构 | `docs/12-影响面与回归防护.md` | `skills/impact-analysis/SKILL.md` |
 | 交付 / 上线 | `docs/06-验收与证据留档.md`、`docs/07-安全与密钥.md` | `DEPLOYMENT_GUIDE.md` |
+| 技术栈与校验命令 | `docs/TECH_STACK.md`、`docs/10-技术栈适配.md` | `workflow.config.json`、`stacks/registry.json` |
+| 用到的技术栈模板没规范 | `docs/10-技术栈适配.md` 第三节 | 项目 `docs/<栈>规范.md` |
 
 ## 四、文档职责边界（单一事实来源）
 
@@ -67,6 +70,8 @@
 7. 表结构变更只通过 `db/migration/V<YYYYMMDDHHmm>__<描述>.sql` 脚本进行，脚本只增不改。
 8. 提交前先同步主干，按第八节检查提交信息与分支命名；不向主干强推。
 9. 只使用仓库内技能：自研在 `skills/`，引入在 `.agents/skills/`；需要新能力时先引入到仓库再使用。
+10. 用到的技术栈若模板没有规范，先在 `docs/TECH_STACK.md` 登记缺口并认领，再补最小规范。
+11. 本项目不用的技术栈规范保持装箱：不写进阅读顺序、不进 CI、不做物理删除。
 
 ### 禁止
 
@@ -98,6 +103,7 @@
 | 启动后端 | `<命令>` |
 | 前端校验 | `<命令>`（应包含 lint、类型检查、规范检查） |
 | 后端测试 | `<命令>` |
+| 全部校验（文档 + 技能 + 技术栈） | `npm run validate` |
 | 完整校验 | `npm run validate` |
 | 文档自检 | `node scripts/check-docs.mjs` |
 | 查看任务占用与冲突 | `node scripts/tasks.mjs`（`--check` 只看当前分支） |

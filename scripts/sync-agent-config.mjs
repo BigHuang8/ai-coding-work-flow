@@ -8,6 +8,7 @@
  * 用法：
  *   node scripts/sync-agent-config.mjs           # 生成 / 更新入口文件
  *   node scripts/sync-agent-config.mjs --check   # 只校验是否已同步（CI 使用）
+ *   node scripts/sync-agent-config.mjs --force   # 连非本脚本生成的入口文件一并覆盖
  *   node scripts/sync-agent-config.mjs --lock    # 更新 skills-lock.json 中的哈希
  */
 
@@ -20,7 +21,13 @@ const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const LOCK_FILE = path.join(ROOT, 'skills-lock.json');
 const SKILLS_DIR = path.join(ROOT, '.agents', 'skills');
 
-const CLAUDE_ENTRY = `# Claude Code 入口
+/** 生成文件的标记：没有这个标记的同名文件视为项目自有文件，默认不覆盖 */
+const GENERATED_MARKER =
+  '<!-- 本文件由 node scripts/sync-agent-config.mjs 生成，规范内容以 AGENTS.md 为准，请勿手工编辑 -->';
+
+const CLAUDE_ENTRY = `${GENERATED_MARKER}
+
+# Claude Code 入口
 
 本项目的开发规范以 \`AGENTS.md\` 为**唯一事实来源**，本文件只做转发，不要在此处编写规范内容。
 
@@ -42,6 +49,8 @@ description: 团队 AI 工作流规范入口
 alwaysApply: true
 ---
 
+${GENERATED_MARKER}
+
 # 工作流规范入口
 
 本项目的开发规范以仓库根目录的 \`AGENTS.md\` 为**唯一事实来源**。
@@ -57,7 +66,9 @@ alwaysApply: true
 5. 只使用仓库内技能：自研在 \`skills/\`，引入在 \`.agents/skills/\`；禁止调用个人目录下的技能。
 `;
 
-const COPILOT_ENTRY = `# Copilot 说明
+const COPILOT_ENTRY = `${GENERATED_MARKER}
+
+# Copilot 说明
 
 本项目的开发规范以仓库根目录的 \`AGENTS.md\` 为**唯一事实来源**。本文件只做转发。
 
@@ -71,10 +82,25 @@ const COPILOT_ENTRY = `# Copilot 说明
 `;
 
 const GENERATED = [
-  { file: 'CLAUDE.md', content: CLAUDE_ENTRY },
-  { file: path.join('.cursor', 'rules', '00-workflow.mdc'), content: CURSOR_RULE },
-  { file: path.join('.github', 'copilot-instructions.md'), content: COPILOT_ENTRY }
+  { file: 'CLAUDE.md', content: CLAUDE_ENTRY, legacyHeads: ['# Claude Code 入口'] },
+  {
+    file: path.join('.cursor', 'rules', '00-workflow.mdc'),
+    content: CURSOR_RULE,
+    legacyHeads: ['---\ndescription: 团队 AI 工作流规范入口', '---\r\ndescription: 团队 AI 工作流规范入口']
+  },
+  { file: path.join('.github', 'copilot-instructions.md'), content: COPILOT_ENTRY, legacyHeads: ['# Copilot 说明'] }
 ];
+
+/**
+ * 判断入口文件是不是本脚本产出的。
+ * 新版本带 GENERATED_MARKER；v1.6 之前的版本没有标记，用首行特征兜底识别，
+ * 避免老项目升级后被误判成「项目自有文件」而拒绝更新。
+ */
+function isGeneratedEntry(item, current) {
+  if (current === null) return true;
+  if (current.includes(GENERATED_MARKER)) return true;
+  return (item.legacyHeads ?? []).some((head) => current.startsWith(head));
+}
 
 async function exists(target) {
   try {
@@ -101,9 +127,10 @@ function sha256(content) {
   return createHash('sha256').update(content).digest('hex');
 }
 
-async function syncGenerated(checkOnly) {
+async function syncGenerated(checkOnly, force) {
   const outOfSync = [];
   const updated = [];
+  const foreign = [];
 
   for (const item of GENERATED) {
     const target = path.join(ROOT, item.file);
@@ -111,6 +138,12 @@ async function syncGenerated(checkOnly) {
     const current = (await exists(target)) ? await readFile(target, 'utf8') : null;
 
     if (current === item.content) continue;
+
+    // 没有生成标记的同名文件属于项目自有内容：默认不覆盖，先让人把内容并入 AGENTS.md
+    if (!isGeneratedEntry(item, current) && !force) {
+      foreign.push(display);
+      continue;
+    }
 
     if (checkOnly) {
       outOfSync.push(display);
@@ -122,7 +155,7 @@ async function syncGenerated(checkOnly) {
     updated.push(display);
   }
 
-  return { outOfSync, updated };
+  return { outOfSync, updated, foreign };
 }
 
 async function verifyLock() {
@@ -178,6 +211,7 @@ async function main() {
   const argv = process.argv.slice(2);
   const checkOnly = argv.includes('--check');
   const lockOnly = argv.includes('--lock');
+  const force = argv.includes('--force');
 
   if (lockOnly) {
     const count = await updateLock();
@@ -185,22 +219,34 @@ async function main() {
     return;
   }
 
-  const { outOfSync, updated } = await syncGenerated(checkOnly);
+  const { outOfSync, updated, foreign } = await syncGenerated(checkOnly, force);
 
   if (checkOnly) {
     const { problems } = await verifyLock();
-    const all = [...outOfSync.map((f) => `入口文件未同步：${f}`), ...problems];
+    const all = [
+      ...outOfSync.map((f) => `入口文件未同步：${f}`),
+      ...foreign.map(
+        (f) => `入口文件不是本脚本生成的，已跳过未覆盖：${f}（请把自有规则并入 AGENTS.md 后删除该文件，或加 --force 覆盖）`
+      ),
+      ...problems
+    ];
 
     if (all.length > 0) {
       console.error('❌ 多 AI 工具配置检查未通过：');
       for (const item of all) console.error(`  - ${item}`);
       console.error('');
-      console.error('修复方式：node scripts/sync-agent-config.mjs');
+      console.error('修复方式：node scripts/sync-agent-config.mjs（先合并自有规则，再重新生成）');
       process.exit(1);
     }
 
     console.log('✅ 多 AI 工具配置已同步，技能哈希校验通过。');
     return;
+  }
+
+  if (foreign.length > 0) {
+    console.log(`⚠️ 以下入口文件不是本脚本生成的，已跳过（不会覆盖项目自有内容）：`);
+    for (const item of foreign) console.log(`  - ${item}`);
+    console.log('  处理方式：把自有规则并入 AGENTS.md，删除该文件后重跑本脚本；确认要丢弃时加 --force');
   }
 
   if (updated.length === 0) {

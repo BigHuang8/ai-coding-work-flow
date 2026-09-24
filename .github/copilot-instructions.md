@@ -1,3 +1,5 @@
+<!-- 本文件由 node scripts/sync-agent-config.mjs 生成，规范内容以 AGENTS.md 为准，请勿手工编辑 -->
+
 # Copilot 说明
 
 本项目的开发规范以仓库根目录的 `AGENTS.md` 为**唯一事实来源**。本文件只做转发。

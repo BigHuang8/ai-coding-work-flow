@@ -9,7 +9,8 @@
 
 默认技术栈为 **Java 17 + Spring Boot 3 + Spring Cloud + MySQL 8 + Vue 3（Vite / uni-app）**，对应规范见
 [后端规范](docs/13-后端规范-Java-Spring.md)、[前端规范](docs/14-前端规范-Vue3.md)、[数据库设计与建表规范](docs/15-数据库设计与建表规范.md)；
-换技术栈按 [技术栈适配](docs/10-技术栈适配.md) 的三要素替换即可，流程本身与语言无关。
+流程本身与语言无关：接入项目时自动探测实际技术栈，分「已启用 / 装箱未启用 / 缺口」三类处理，
+项目有、模板没有的栈走补规范流程，模板有、项目没有的栈装箱留用，见 [技术栈适配](docs/10-技术栈适配.md)。
 
 ---
 
@@ -25,6 +26,9 @@
 | 规范只写在文档里，没人执行 | `.githooks/` 与 `.github/workflows/` 把规范变成「失败即阻断」的检查 |
 | 各人用自己机器上的私有技能，换台机器就复现不了 | 只允许仓库内技能（`skills/` 与 `.agents/skills/`），`scripts/check-skills.mjs` 负责拦住越界来源，见 [技能体系](docs/03-技能体系.md) 第五节 |
 | 新人不知道从哪读起 | [快速开始](docs/00-快速开始.md) + [接入清单](docs/08-接入清单.md) |
+| 已有项目接入时被模板冲掉原有约定 | 只补不改：先体检、再按融合清单逐项合并，见 [技术栈适配](docs/10-技术栈适配.md) 第二节 |
+| 项目用的技术栈模板里没有规范 | 探测报缺口 → 认领 → 写最小规范 → 登记 `provisional` → 限期转正，见 [技术栈适配](docs/10-技术栈适配.md) 第三节 |
+| 模板规范里有一堆项目用不到的技术栈 | 装箱不启用：不注入、不进阅读顺序、不进 CI，规范留库备用 |
 
 ## 二、三层治理模型
 
@@ -95,6 +99,7 @@
 │   └── verification/          验收证据留档（按需求建子目录）
 ├── skills/                    自研技能：团队自己的流程能力
 ├── scripts/                   可执行工具：安装钩子、注入模板、文档校验、技能自检、需求建档、任务看板
+├── stacks/                    技术栈登记表：模板覆盖与已知未覆盖的栈，供探测与自检使用
 ├── templates/project/         注入到业务项目的文件模板
 ├── skills-lock.json           外部引入技能的来源与哈希锁定
 └── （生成文件）                CLAUDE.md、.cursor/rules/、.github/copilot-instructions.md
@@ -123,17 +128,24 @@ cat docs/00-快速开始.md
 ## 八、接入业务项目
 
 ```bash
+# 0. 接入体检：看项目实际用了哪些栈、哪些是缺口（只读，不改动）
+node scripts/detect-stack.mjs --target ../your-project
+
 # 预览将要写入的文件，不实际改动
 node scripts/bootstrap.mjs --target ../your-project --dry-run
 
-# 实际注入（已存在的文件默认跳过，不会覆盖）
+# 实际注入（已存在的文件默认跳过，不会覆盖；技术栈默认自动探测）
 node scripts/bootstrap.mjs --target ../your-project
 
-# 指定技术栈，跳过不相关的配置
+# 需要人工纠正技术栈识别结果时
 node scripts/bootstrap.mjs --target ../your-project --stack java-springboot,vue3
 ```
 
-接入后请按 [接入清单](docs/08-接入清单.md) 逐项完成定制，尤其是 `AGENTS.md` 的技术栈章节和 `CODEOWNERS` 的负责人。
+注入后会生成两份记录：`workflow.config.json`（已启用 / 装箱 / 缺口，供脚本消费）与
+`docs/TECH_STACK.md`（人读的登记与接入记录，含**融合清单**）。
+
+接入后请按 [接入清单](docs/08-接入清单.md) 逐项完成定制，尤其是 `AGENTS.md` 的技术栈章节、`CODEOWNERS` 的负责人，
+以及融合清单里「已有的 AI 入口 / CI / 钩子 / validate 命令」这几项——它们不会被自动覆盖，需要人工合并。
 
 ## 九、文档地图
 
@@ -149,7 +161,7 @@ node scripts/bootstrap.mjs --target ../your-project --stack java-springboot,vue3
 | [07-安全与密钥](docs/07-安全与密钥.md) | 涉及配置、密钥、生产环境 |
 | [08-接入清单](docs/08-接入清单.md) | 要把模板落到一个真实项目 |
 | [09-常见问题](docs/09-常见问题.md) | 流程卡住了 |
-| [10-技术栈适配](docs/10-技术栈适配.md) | 项目不是 Vue / Java，需要换适配 |
+| [10-技术栈适配](docs/10-技术栈适配.md) | 接入已有项目，或项目技术栈与模板对不上（两个方向都有出口） |
 | [11-需求接收与拆解](docs/11-需求接收与拆解.md) | 收到 PRD 和原型图，不知道原件放哪、技术实现写哪 |
 | [12-影响面与回归防护](docs/12-影响面与回归防护.md) | 担心改了东西弄坏已有功能 |
 | [13-后端规范-Java-Spring](docs/13-后端规范-Java-Spring.md) | 写后端代码、定接口、接 Feign 或事务 |
@@ -165,6 +177,6 @@ node scripts/bootstrap.mjs --target ../your-project --stack java-springboot,vue3
 
 ---
 
-**模板版本**：1.5.0
+**模板版本**：1.6.0
 **维护者**：hqc 团队
 **最后更新**：2026-09-24

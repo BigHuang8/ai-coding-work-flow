@@ -29,7 +29,9 @@
 | 修 Bug | `skills/flow-orchestrator/SKILL.md` 的排障路径 | `MEMORY.md` 中同类历史修复 |
 | 提交 / 评审 | `docs/05-分支提交与评审.md` | `skills/dual-axis-review/SKILL.md` |
 | 交付 / 上线 | `docs/06-验收与证据留档.md`、`docs/07-安全与密钥.md` | 项目部署文档 |
-| 技术栈与校验命令 | `docs/10-技术栈适配.md` | `workflow.config.json` |
+| 技术栈与校验命令 | `docs/10-技术栈适配.md`、`stacks/README.md` | `workflow.config.json`、`docs/TECH_STACK.md` |
+| 项目用到的技术栈模板没规范 | `docs/10-技术栈适配.md` 第三节 | `stacks/registry.json`、项目 `docs/<栈>规范.md` |
+| 接入一个已有项目 | `docs/08-接入清单.md`、`docs/10-技术栈适配.md` 第二节 | `node scripts/detect-stack.mjs` 的体检输出 |
 
 ## 三、文档职责边界（单一事实来源）
 
@@ -61,6 +63,8 @@
 8. 表结构变更只通过 `db/migration/V<时间戳>__<描述>.sql` 脚本进行，脚本只增不改；已执行的脚本禁止编辑。
 9. 提交前先同步主干并按 `docs/05-分支提交与评审.md` 检查分支命名与提交信息；不向主干强推。
 10. 只使用仓库内技能：自研在 `skills/`，引入在 `.agents/skills/`；需要新能力时先引入到仓库（登记哈希）再使用。
+11. 用到的技术栈若模板没有规范，先登记缺口并认领，再补最小规范；缺口未认领前不得凭个人偏好发明约定。
+12. 本项目不用的技术栈规范保持装箱：不写进阅读顺序、不进 CI、不做物理删除。
 
 ### 禁止
 

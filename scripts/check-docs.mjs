@@ -259,6 +259,7 @@ const REQUIRED_FILES = [
   'docs/06-验收与证据留档.md',
   'docs/07-安全与密钥.md',
   'skills/README.md',
+  'stacks/registry.json',
   'scripts/check-docs.mjs'
 ];
 

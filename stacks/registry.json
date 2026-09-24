@@ -1,0 +1,118 @@
+{
+  "version": 1,
+  "updatedAt": "2026-09-24",
+  "slots": {
+    "server": "后端服务",
+    "web": "Web 前端",
+    "mobile": "移动端",
+    "data": "数据库与存储",
+    "tooling": "脚本与工程工具"
+  },
+  "stacks": [
+    {
+      "id": "java-springboot",
+      "name": "Java 17 / Spring Boot 3 / Spring Cloud",
+      "slot": "server",
+      "status": "built-in",
+      "guidelines": ["docs/13-后端规范-Java-Spring.md"],
+      "validate": "mvn test -q",
+      "detect": {
+        "files": ["**/pom.xml", "**/build.gradle", "**/build.gradle.kts"],
+        "pomKeywords": ["spring-boot"]
+      }
+    },
+    {
+      "id": "vue3-web",
+      "name": "Vue 3 / Vite 管理后台",
+      "slot": "web",
+      "status": "built-in",
+      "guidelines": ["docs/14-前端规范-Vue3.md"],
+      "validate": "npm run validate",
+      "detect": {
+        "packageDeps": ["vue", "vite", "element-plus", "pinia"]
+      }
+    },
+    {
+      "id": "uniapp-vue3",
+      "name": "uni-app / Vue 3 移动端",
+      "slot": "mobile",
+      "status": "built-in",
+      "guidelines": ["docs/14-前端规范-Vue3.md"],
+      "validate": "npm run validate",
+      "detect": {
+        "files": ["**/pages.json", "**/manifest.json"],
+        "packageDeps": ["@dcloudio/uni-app"]
+      }
+    },
+    {
+      "id": "mysql-schema",
+      "name": "MySQL 8 表结构与迁移",
+      "slot": "data",
+      "status": "built-in",
+      "guidelines": ["docs/15-数据库设计与建表规范.md"],
+      "validate": "无自动命令，按 15 号文档的评审清单人工核对",
+      "detect": {
+        "files": ["**/db", "**/*.sql"],
+        "pomKeywords": ["mysql-connector"]
+      }
+    },
+    {
+      "id": "node-tooling",
+      "name": "Node 脚本与工程工具链",
+      "slot": "tooling",
+      "status": "built-in",
+      "always": true,
+      "guidelines": ["docs/05-分支提交与评审.md"],
+      "validate": "node scripts/check-docs.mjs",
+      "detect": {}
+    }
+  ],
+  "catalog": [
+    {
+      "id": "react-web",
+      "name": "React",
+      "slot": "web",
+      "detect": { "packageDeps": ["react", "react-dom", "next"] }
+    },
+    {
+      "id": "vue2-web",
+      "name": "Vue 2",
+      "slot": "web",
+      "detect": { "packageDeps": ["vue-template-compiler", "vue-cli-service"] }
+    },
+    {
+      "id": "python-service",
+      "name": "Python 服务（Django / FastAPI / Flask）",
+      "slot": "server",
+      "detect": { "files": ["**/requirements.txt", "**/pyproject.toml", "**/manage.py"] }
+    },
+    {
+      "id": "go-service",
+      "name": "Go 服务",
+      "slot": "server",
+      "detect": { "files": ["**/go.mod"] }
+    },
+    {
+      "id": "dotnet-service",
+      "name": ".NET 服务",
+      "slot": "server",
+      "detect": { "files": ["**/*.csproj", "**/*.sln"] }
+    },
+    {
+      "id": "postgresql",
+      "name": "PostgreSQL",
+      "slot": "data",
+      "detect": {
+        "packageDeps": ["pg", "postgres", "prisma", "typeorm"],
+        "pomKeywords": ["postgresql"]
+      }
+    }
+  ],
+  "manifests": {
+    "Cargo.toml": "Rust / Cargo",
+    "composer.json": "PHP / Composer",
+    "Gemfile": "Ruby / Bundler",
+    "Package.swift": "Swift Package Manager",
+    "mix.exs": "Elixir / Mix"
+  }
+}

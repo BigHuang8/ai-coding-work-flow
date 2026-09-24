@@ -4,6 +4,37 @@
 
 格式参考 [Keep a Changelog](https://keepachangelog.com/zh-CN/1.1.0/)，版本号遵循语义化版本。
 
+## [1.6.0] - 2026-09-24
+
+### 新增
+
+- **技术栈登记表 `stacks/registry.json`**：把「模板已覆盖的栈」与「已知但未覆盖的栈」分开登记，
+  每个栈带能力位（`slot`）、规范文档、校验命令与探测规则；字段说明见 `stacks/README.md`。
+- **`scripts/detect-stack.mjs`**：技术栈探测与自检。把项目用到的栈分成三类——已启用、装箱未启用、缺口；
+  支持 `--check`（登记表结构 + 规范到位 + 缺口认领 + 配置一致性）、`--strict`（缺口判失败）、`--json`。
+- **`scripts/lib/stacks.mjs`**：探测引擎与项目侧 `docs/TECH_STACK.md` 的生成逻辑，供探测与接入脚本共用。
+- **接入体检与融合清单**：`bootstrap.mjs` 默认自动探测技术栈（`--stack auto`），生成 `docs/TECH_STACK.md`
+  与更完整的 `workflow.config.json`（含 `availableStacks`、`stackGaps`），并把项目已有的 AI 入口、CI、
+  钩子框架、`validate` 命令列成融合清单，逐项给出合并方式。
+
+### 变更
+
+- **`docs/10-技术栈适配.md` 重写**：补齐两个方向的出口——项目有、模板没有时走「补规范」五步
+  （含最小规范四要素、骨架示例、`provisional` 登记与转正标准）；模板有、项目没有时「装箱不启用」
+  （不注入、不进阅读顺序、不进 CI、不物理删除）。新增能力位模型、无缝接入规则与严格模式切换时机。
+- **`docs/08-接入清单.md`**：新增「步骤 0：接入体检」，步骤 1 补充融合清单处理，完成标志与常见坑同步扩充。
+- **`scripts/sync-agent-config.mjs`**：生成的 AI 入口文件加入生成标记；遇到没有标记的同名文件
+  （项目自有的 `CLAUDE.md` 等）默认**跳过并提示**，不再静默覆盖，只有 `--force` 才会覆盖。
+  v1.6 之前生成的文件按首行特征识别，老项目升级不会被误判成自有文件。
+- **`scripts/bootstrap.mjs`**：`--stack` 默认改为 `auto`（自动探测），支持 `none` 与显式指定；注入清单新增 `stacks/`。
+- `npm run validate` 增加技术栈自检，`.github/workflows/standards.yml` 同步增加对应步骤。
+- 制度层同步：`AGENTS.md` 与 `templates/project/AGENTS.md` 的阅读顺序与硬性规则增加「缺口先认领」「装箱不启用」两条。
+
+### 说明
+
+- 缺口在接入期按警告处理，稳定后切 `--strict` 写进流水线；建议接入满一个月后切换。
+- 技术栈规范的单一事实来源仍是 `docs/`；`stacks/` 只回答「有哪些栈、规范在哪、命令是什么」。
+
 ## [1.5.0] - 2026-09-24
 
 ### 新增

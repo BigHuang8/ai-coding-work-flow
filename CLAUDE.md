@@ -1,3 +1,5 @@
+<!-- 本文件由 node scripts/sync-agent-config.mjs 生成，规范内容以 AGENTS.md 为准，请勿手工编辑 -->
+
 # Claude Code 入口
 
 本项目的开发规范以 `AGENTS.md` 为**唯一事实来源**，本文件只做转发，不要在此处编写规范内容。
