@@ -7,6 +7,10 @@
 - **方法论**：`docs/` 说明为什么这么约定，以及团队怎么落地。
 - **工程骨架**：`skills/`、`scripts/`、`.githooks/`、`.github/`、`templates/` 可以直接复制或一键注入到任意业务项目。
 
+默认技术栈为 **Java 17 + Spring Boot 3 + Spring Cloud + MySQL 8 + Vue 3（Vite / uni-app）**，对应规范见
+[后端规范](docs/13-后端规范-Java-Spring.md)、[前端规范](docs/14-前端规范-Vue3.md)、[数据库设计与建表规范](docs/15-数据库设计与建表规范.md)；
+换技术栈按 [技术栈适配](docs/10-技术栈适配.md) 的三要素替换即可，流程本身与语言无关。
+
 ---
 
 ## 一、它解决什么问题
@@ -54,6 +58,8 @@
 ├── .github/                   PR 模板、CODEOWNERS、CI 工作流
 ├── .gitee/                    Gitee 平台 PR 模板（与 .github 内容保持一致）
 ├── docs/                      工作流文档（中文，按编号排序阅读）
+│   ├── 00~12                  流程规范（总览、协作、评审、需求、影响面…）
+│   ├── 13~15                  技术规范（后端 Java/Spring、前端 Vue3、数据库与建表）
 │   └── verification/          验收证据留档（按需求建子目录）
 ├── skills/                    自研技能：团队自己的流程能力
 ├── scripts/                   可执行工具：安装钩子、注入模板、文档校验、需求建档
@@ -114,6 +120,9 @@ node scripts/bootstrap.mjs --target ../your-project --stack java-springboot,vue3
 | [10-技术栈适配](docs/10-技术栈适配.md) | 项目不是 Vue / Java，需要换适配 |
 | [11-需求接收与拆解](docs/11-需求接收与拆解.md) | 收到 PRD 和原型图，不知道原件放哪、技术实现写哪 |
 | [12-影响面与回归防护](docs/12-影响面与回归防护.md) | 担心改了东西弄坏已有功能 |
+| [13-后端规范-Java-Spring](docs/13-后端规范-Java-Spring.md) | 写后端代码、定接口、接 Feign 或事务 |
+| [14-前端规范-Vue3](docs/14-前端规范-Vue3.md) | 写页面、组件、接口层或状态管理 |
+| [15-数据库设计与建表规范](docs/15-数据库设计与建表规范.md) | 建表、加字段、加索引、写迁移脚本 |
 
 ## 八、维护与版本
 
@@ -123,6 +132,6 @@ node scripts/bootstrap.mjs --target ../your-project --stack java-springboot,vue3
 
 ---
 
-**模板版本**：1.0.0
+**模板版本**：1.3.0
 **维护者**：hqc 团队
 **最后更新**：2026-09-24

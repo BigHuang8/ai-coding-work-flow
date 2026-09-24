@@ -31,9 +31,10 @@
 | 任意任务 | 本文件、`docs/01-工作流总览.md` | — |
 | 收到 PRD / 原型 | `docs/11-需求接收与拆解.md` | `skills/requirement-intake/SKILL.md`、`spec/` 下同类需求 |
 | 只有口头需求 | `skills/spec-writer/SKILL.md` | `SPEC.md` |
-| <前端模块> | `docs/<前端规范>.md` | `docs/API_CONTRACT.md` |
-| <后端模块> | `docs/<后端规范>.md` | `docs/API_CONTRACT.md` |
-| 提交 / 评审 | `docs/05-分支提交与评审.md` | `skills/dual-axis-review/SKILL.md` |
+| 写前端代码 | `docs/14-前端规范-Vue3.md` | `docs/API_CONTRACT.md`、`docs/ADMIN_GUIDELINES.md` |
+| 写后端代码 | `docs/13-后端规范-Java-Spring.md` | `docs/API_CONTRACT.md`、`SPRING_GUIDELINES.md` |
+| 建表 / 改表 / 写 SQL | `docs/15-数据库设计与建表规范.md` | `db/建表模板.sql`、`db/README.md` |
+| 建分支 / 提交 / 解冲突 | `docs/05-分支提交与评审.md` 第三、八节 | `skills/dual-axis-review/SKILL.md` |
 | 多人并行开发 | `docs/02-团队协作与角色.md` 第四节 | `node scripts/tasks.mjs` |
 | 改公共代码 / 接口 / 表结构 | `docs/12-影响面与回归防护.md` | `skills/impact-analysis/SKILL.md` |
 | 交付 / 上线 | `docs/06-验收与证据留档.md`、`docs/07-安全与密钥.md` | `DEPLOYMENT_GUIDE.md` |
@@ -62,6 +63,8 @@
 4. 接口或数据结构变更时，同步更新 `docs/API_CONTRACT.md` 与两端的类型定义。
 5. 提交前运行对应模块的校验命令（见第七节）。
 6. 改公共代码、接口、数据结构或配置前，先记录测试基线并反查调用方；改动后做回归验证并与基线对比。
+7. 表结构变更只通过 `db/migration/V<YYYYMMDDHHmm>__<描述>.sql` 脚本进行，脚本只增不改。
+8. 提交前先同步主干，按第八节检查提交信息与分支命名；不向主干强推。
 
 ### 禁止
 
@@ -72,6 +75,8 @@
 5. 禁止用放宽规则、注释测试、`@ts-ignore`、`# noqa` 之类的方式让检查通过。
 6. 禁止修改与当前任务无关的文件。
 7. 禁止编造未经验证的 API、命令与配置项。
+8. 禁止直连生产库改表、禁止在业务代码里执行 DDL、禁止修改已执行过的迁移脚本。
+9. 禁止在主干分支上直接提交业务改动。
 
 ## 六、接口契约要点
 
@@ -94,6 +99,7 @@
 | 文档自检 | `node scripts/check-docs.mjs` |
 | 查看任务占用与冲突 | `node scripts/tasks.mjs`（`--check` 只看当前分支） |
 | 新建需求目录 | `node scripts/new-spec.mjs --title "<主题>" --with-artifacts --with-verification` |
+| 建表 / 改表脚本目录 | `db/migration/`，命名与流程见 `docs/15-数据库设计与建表规范.md` |
 
 ## 八、提交规范
 

@@ -29,6 +29,7 @@ const ENTRY_LIST = [
   { from: 'templates/project/.env.example', to: '.env.example' },
   { from: 'templates/project/docs/API_CONTRACT.md', to: 'docs/API_CONTRACT.md' },
   { from: 'templates/project/spec/README.md', to: 'spec/README.md' },
+  { from: 'templates/project/db', to: 'db' },
   { from: 'docs', to: 'docs' },
   { from: 'skills', to: 'skills' },
   { from: 'scripts', to: 'scripts' },

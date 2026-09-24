@@ -19,12 +19,16 @@
 | 任意任务 | 本文件、`docs/01-工作流总览.md` | — |
 | 收到 PRD / 原型 / 需求文档 | `docs/11-需求接收与拆解.md` | `skills/requirement-intake/SKILL.md`、`spec/` 下同类需求 |
 | 只有口头需求，无正式文档 | `skills/spec-writer/SKILL.md` | `templates/project/SPEC.md` |
-| 写业务代码 | 对应技术栈规范（见 `docs/10-技术栈适配.md`） | `docs/04-上下文与记忆治理.md` |
+| 写后端代码 | `docs/13-后端规范-Java-Spring.md` | `docs/04-上下文与记忆治理.md`、`docs/API_CONTRACT.md` |
+| 写前端代码 | `docs/14-前端规范-Vue3.md` | `docs/04-上下文与记忆治理.md`、`docs/ADMIN_GUIDELINES.md` |
+| 建表 / 改表 / 写 SQL | `docs/15-数据库设计与建表规范.md` | `templates/project/db/建表模板.sql` |
 | 改公共代码 / 接口 / 表结构 | `docs/12-影响面与回归防护.md` | `skills/impact-analysis/SKILL.md` |
+| 建分支 / 提交 / 解冲突 | `docs/05-分支提交与评审.md` 第三、八节 | `docs/02-团队协作与角色.md` |
 | 多人并行开发 | `docs/02-团队协作与角色.md` 第四节 | `node scripts/tasks.mjs` |
 | 修 Bug | `skills/flow-orchestrator/SKILL.md` 的排障路径 | `MEMORY.md` 中同类历史修复 |
 | 提交 / 评审 | `docs/05-分支提交与评审.md` | `skills/dual-axis-review/SKILL.md` |
 | 交付 / 上线 | `docs/06-验收与证据留档.md`、`docs/07-安全与密钥.md` | 项目部署文档 |
+| 技术栈与校验命令 | `docs/10-技术栈适配.md` | `workflow.config.json` |
 
 ## 三、文档职责边界（单一事实来源）
 
@@ -53,6 +57,8 @@
 5. 完成后同步更新受影响的文档：`SPEC.md`、`MEMORY.md`、`docs/`、`CHANGELOG.md` 中至少一处必须反映变更。
 6. 提交前运行对应模块的校验命令（见第六节）。
 7. 改公共代码、接口、数据结构或配置前，先记录测试基线并反查调用方；改动后做回归验证并与基线对比。
+8. 表结构变更只通过 `db/migration/V<时间戳>__<描述>.sql` 脚本进行，脚本只增不改；已执行的脚本禁止编辑。
+9. 提交前先同步主干并按 `docs/05-分支提交与评审.md` 检查分支命名与提交信息；不向主干强推。
 
 ### 禁止
 
@@ -63,6 +69,8 @@
 5. 禁止为了让检查通过而放宽规则、注释掉测试、加 `@ts-ignore`、`# noqa` 之类的静默抑制。
 6. 禁止修改与当前任务无关的文件（顺手重构、顺手格式化）。无关问题写进回复即可。
 7. 禁止编造未经验证的 API、命令、配置项和库行为；不确定就查证或标注待确认。
+8. 禁止直连生产库改表、禁止在业务代码里执行 DDL、禁止修改已执行过的迁移脚本。
+9. 禁止在主干分支上直接提交业务改动；哪怕是 5 分钟的小改动也要切分支（见 `docs/05-分支提交与评审.md` 第八节）。
 
 ## 五、六阶段流水线与门禁
 
