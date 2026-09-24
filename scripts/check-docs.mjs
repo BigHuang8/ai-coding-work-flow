@@ -15,7 +15,7 @@
  */
 
 import { readdir, readFile, stat } from 'node:fs/promises';
-import { existsSync } from 'node:fs';
+import { existsSync, readFileSync } from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { formatReport, formatStatistics, formatSummary } from './lib/reporter.mjs';
@@ -50,17 +50,59 @@ const SECRET_PATTERNS = [
   { id: 'E302', re: /\bAKIA[0-9A-Z]{16}\b/, message: '发现疑似 AWS Access Key' },
   { id: 'E303', re: /\bghp_[A-Za-z0-9]{30,}\b/, message: '发现疑似 GitHub Token' },
   { id: 'E304', re: /\bsk-[A-Za-z0-9]{24,}\b/, message: '发现疑似 API Key（sk- 前缀）' },
-  { id: 'E305', re: /jdbc:[a-z]+:\/\/[^\s"']*password=[^\s"'&]+/i, message: 'JDBC 连接串中内联了口令' },
-  {
-    id: 'E306',
-    re: /(password|passwd|pwd|secret|token|apikey|api_key|appsecret)\s*[:=]\s*["']?([^\s"',;#]{6,})/i,
-    message: '疑似真实口令或密钥',
-    checkValue: true
-  }
+  { id: 'E305', re: /jdbc:[a-z]+:\/\/[^\s"']*password=[^\s"'&]+/i, message: 'JDBC 连接串中内联了口令' }
 ];
 
-/** 允许出现的占位值 */
-const PLACEHOLDER_RE = /^(change[-_]?me|your[-_.].*|example.*|placeholder.*|xxx+|\*+|<.*>|\$\{.*\}|none|null|empty|todo|ffffff|password|passwd|pwd|secret|token|apikey|api_key|appsecret|\d{1,6})$/i;
+/**
+ * E306 的键名锚定：关键字前不能是字母数字，避免 requestToken、accessToken、bearerToken
+ * 这类驼峰变量被截成 token 误报；下划线与点是合法分隔，所以 DB_PASSWORD、
+ * spring.datasource.password 仍能命中。
+ */
+const SECRET_KEY_RE = /(?:^|[^A-Za-z0-9])(password|passwd|pwd|secret|token|apikey|api_key|appsecret)\s*[:=]\s*(.+)$/i;
+
+/**
+ * 值不是字面量：变量引用、函数调用、模板占位、三元表达式。
+ * 命中即认定「这是代码而不是凭证」，例如 ${POSTGRES_PASSWORD:?...}、getItem('accessToken')。
+ */
+const SECRET_EXPRESSION_RE = /[{}()<>?!|&$[\]]/;
+
+/** 允许出现的占位值：显式占位词、测试假值、纯数字短串 */
+const PLACEHOLDER_RE = /^(change[-_]?me|replace[-_].*|your[-_.].*|example.*|placeholder.*|sample.*|dummy.*|fake.*|mock.*|test.*|demo.*|local[-_].*|dev[-_].*|staging[-_].*|xxx+|\*+|<.*>|\$\{.*\}|none|null|nil|empty|todo|ffffff|password|passwd|pwd|secret|token|apikey|api_key|appsecret|\d{1,6}|[a-z]+[-_](token|key|secret|pwd|password|value|test))$/i;
+
+/** 测试与示例文件：命中密钥规则时降级为警告（测试常含虚构凭证，但仍需人工确认） */
+function isTestLikeFile(abs) {
+  const r = rel(abs);
+  return /(^|\/)(tests?|__tests__|e2e|fixtures)\//i.test(r)
+    || /\.(test|spec)\.[cm]?[jt]sx?$/i.test(r)
+    || /(^|\/)src\/test\//.test(r)
+    || /(Test|Tests|TestCase)\.java$/.test(r);
+}
+
+/**
+ * 接入豁免：已有项目的历史文档不符合本模板规范时，把路径登记到 workflow.config.json 的
+ * legacyDocs 里，只降级「主语言」「命名」两类提示，密钥与断链等硬问题照常报错。
+ * 支持两种写法：精确路径 docs/deployment.md，目录前缀 docs/superpowers/**。
+ */
+const LEGACY_EXEMPT = loadLegacyDocs();
+
+function loadLegacyDocs() {
+  try {
+    const configPath = path.join(ROOT, 'workflow.config.json');
+    if (!existsSync(configPath)) return [];
+    const config = JSON.parse(readFileSync(configPath, 'utf8'));
+    return Array.isArray(config.legacyDocs) ? config.legacyDocs.map(String) : [];
+  } catch {
+    return [];
+  }
+}
+
+function isLegacyDoc(abs) {
+  const r = rel(abs);
+  return LEGACY_EXEMPT.some((rule) => {
+    if (rule.endsWith('/**')) return r.startsWith(rule.slice(0, -2));
+    return r === rule;
+  });
+}
 
 /** 敏感但需人工判断：仅告警 */
 const WARN_PATTERNS = [
@@ -111,10 +153,12 @@ function checkLanguage(abs, content) {
 
   const ratio = cjk / (cjk + latin);
   if (ratio < CJK_RATIO_MIN) {
+    const legacy = isLegacyDoc(abs);
     issues.push({
       ruleId: 'E101',
+      level: legacy ? 'warn' : 'error',
       file: rel(abs),
-      message: '文档主语言不是中文',
+      message: legacy ? '文档主语言不是中文，已登记接入豁免，建议随迭代迁移' : '文档主语言不是中文',
       detail: `中文字符 ${cjk} 个，拉丁字母 ${latin} 个，中文占比 ${(ratio * 100).toFixed(1)}%（下限 ${CJK_RATIO_MIN * 100}%）`,
       suggestion: 'Markdown 文档正文改用中文；代码、命令、路径、API 名称保持原文即可'
     });
@@ -158,12 +202,7 @@ function checkSecrets(abs, content) {
     if (/^\s*(\/\/|#|\*|<!--)/.test(lineText) && !/[:=]/.test(lineText)) return;
 
     for (const rule of SECRET_PATTERNS) {
-      const match = lineText.match(rule.re);
-      if (!match) continue;
-      if (rule.checkValue) {
-        const value = (match[2] ?? '').trim();
-        if (PLACEHOLDER_RE.test(value)) continue;
-      }
+      if (!lineText.match(rule.re)) continue;
       issues.push({
         ruleId: rule.id,
         file: rel(abs),
@@ -173,6 +212,8 @@ function checkSecrets(abs, content) {
       });
       break;
     }
+
+    checkSecretAssignment(abs, lineText, index);
 
     for (const rule of WARN_PATTERNS) {
       if (lineText.match(rule.re)) {
@@ -190,6 +231,39 @@ function checkSecrets(abs, content) {
   });
 }
 
+/**
+ * E306：口令/密钥赋值。
+ *
+ * 只认「键名 = 字面量」这一种形态：
+ *   - 键名必须是独立单词，避免 requestToken、currentToken 这类驼峰变量被截断后误报；
+ *   - 值必须像字面量，含括号、三元、模板占位的一律按代码处理；
+ *   - 值命中占位词表（change-me、replace-*、test-*、token-a 之类）按占位处理；
+ *   - 测试与示例文件降级为警告：测试里的虚构凭证不该阻塞门禁，但也不能视而不见。
+ */
+function checkSecretAssignment(abs, lineText, index) {
+  const match = lineText.match(SECRET_KEY_RE);
+  if (!match) return;
+
+  const raw = (match[2] ?? '').trim().replace(/[,;]+\s*$/, '');
+  const quoted = raw.match(/^["']([^"']*)["']$/);
+  const value = quoted ? quoted[1].trim() : raw.split(/\s+/)[0].replace(/[,;]+$/, '');
+
+  if (value.length < 6) return;
+  if (SECRET_EXPRESSION_RE.test(value)) return;
+  if (PLACEHOLDER_RE.test(value)) return;
+
+  const testLike = isTestLikeFile(abs);
+  issues.push({
+    ruleId: 'E306',
+    level: testLike ? 'warn' : 'error',
+    file: rel(abs),
+    line: index + 1,
+    message: testLike ? '疑似口令或密钥，且位于测试或示例文件，请确认是虚构值' : '疑似真实口令或密钥',
+    detail: `键名 ${match[1]}，值为字面量且未命中占位词表（出于安全不回显原值）`,
+    suggestion: '改为环境变量占位符，真实值放入本地 .env（不入库）；若已提交，先轮换密钥再清理历史'
+  });
+}
+
 /** E4xx：命名规范 */
 async function checkNaming(abs) {
   const r = rel(abs);
@@ -198,10 +272,12 @@ async function checkNaming(abs) {
   if (/^docs\/[^/]+$/.test(r) && DOC_EXT.test(base)) {
     const allowed = /^\d{2}-.+\.md$/.test(base) || /^[A-Z0-9_-]+\.md$/.test(base) || base === 'README.md';
     if (!allowed) {
+      const legacy = isLegacyDoc(abs);
       issues.push({
         ruleId: 'E401',
+        level: legacy ? 'warn' : 'error',
         file: r,
-        message: 'docs 根目录下的文档命名不符合规范',
+        message: legacy ? 'docs 根目录下的文档命名不符合规范，已登记接入豁免，建议随迭代改名' : 'docs 根目录下的文档命名不符合规范',
         detail: '流程类文档应为「两位序号-中文名称.md」，例如 01-工作流总览.md；契约类文档可为全大写，例如 API_CONTRACT.md',
         suggestion: `重命名为「NN-${base}」或全大写形式，或移入 docs 的子目录`
       });

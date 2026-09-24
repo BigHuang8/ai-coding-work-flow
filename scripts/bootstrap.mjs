@@ -50,7 +50,8 @@ const ENTRY_LIST = [
   { from: '.editorconfig', to: '.editorconfig' },
   { from: '.gitattributes', to: '.gitattributes' },
   { from: '.tasksignore', to: '.tasksignore' },
-  { from: 'skills-lock.json', to: 'skills-lock.json' }
+  { from: 'skills-lock.json', to: 'skills-lock.json' },
+  { from: 'assets', to: 'assets' }
 ];
 
 /**
@@ -77,6 +78,11 @@ const FUSION_TARGETS = [
     path: '.github/copilot-instructions.md',
     kind: 'AI 入口',
     advice: '该文件由 AGENTS.md 生成，不要手工维护两份'
+  },
+  {
+    path: '.claude',
+    kind: 'AI 入口',
+    advice: '项目已有 Claude Code 配置目录；本模板只生成 CLAUDE.md，两处规则不要互相矛盾，冲突时以 AGENTS.md 为准'
   },
   {
     path: '.gitlab-ci.yml',
@@ -141,11 +147,28 @@ function detectTrunk(target, explicit) {
     }
   };
   const remoteHead = git(['symbolic-ref', '--short', 'refs/remotes/origin/HEAD']);
-  if (remoteHead) return remoteHead;
-  for (const candidate of ['main', 'master']) {
-    if (git(['rev-parse', '--verify', '--quiet', candidate])) return candidate;
+  if (remoteHead) return remoteHead.replace(/^[^/]+\//, '');
+
+  for (const candidate of ['main', 'master', 'develop', 'int']) {
+    if (git(['rev-parse', '--verify', '--quiet', `refs/heads/${candidate}`])) return candidate;
   }
+
+  const current = git(['rev-parse', '--abbrev-ref', 'HEAD']);
+  if (current && ['main', 'master', 'develop', 'int'].includes(current)) return current;
   return '';
+}
+
+/** 项目侧 package.json：只提供校验入口，不写 type 字段，避免改变项目已有 .js 文件的模块语义 */
+async function renderProjectPackage(target) {
+  const template = JSON.parse(await readFile(path.join(ROOT, 'package.json'), 'utf8'));
+  const name = path.basename(target).toLowerCase().replace(/[^a-z0-9-_.]/g, '-');
+  return `${JSON.stringify({
+    name: name || 'project',
+    private: true,
+    description: 'AI 工作流校验入口，由 hqc-ai-coding-work-flow 模板生成',
+    scripts: template.scripts,
+    engines: template.engines
+  }, null, 2)}\n`;
 }
 
 async function exists(target) {
@@ -216,7 +239,103 @@ async function inspectExisting(target) {
     }
   }
 
+  for (const nested of await inspectNestedAiConfig(target)) items.push(nested);
+
   return items;
+}
+
+/** 子项目里的 AI 工具配置：模板不接管，但要在融合清单里点出来，避免两套规则互相矛盾 */
+async function inspectNestedAiConfig(target) {
+  const items = [];
+  const entries = await readdir(target, { withFileTypes: true }).catch(() => []);
+  for (const entry of entries) {
+    if (!entry.isDirectory() || entry.name.startsWith('.')) continue;
+    if (!(await isDirectory(path.join(target, entry.name, '.claude')))) continue;
+    items.push({
+      path: `${entry.name}/.claude`,
+      kind: 'AI 入口',
+      advice: '子项目已有 Claude Code 配置；规则以本仓库 AGENTS.md 为准，避免两处描述冲突'
+    });
+  }
+  return items;
+}
+
+/** 文档门禁口径，与 scripts/check-docs.mjs 的 E101 保持一致 */
+const CJK_RATIO_MIN = 0.1;
+const CJK_MIN_CHARS = 20;
+
+function needsLanguageExempt(content) {
+  const cjk = (content.match(/[\u4e00-\u9fff]/g) ?? []).length;
+  const latin = (content.match(/[A-Za-z]/g) ?? []).length;
+  if (cjk + latin < CJK_MIN_CHARS) return false;
+  return cjk / (cjk + latin) < CJK_RATIO_MIN;
+}
+
+function needsNamingExempt(relative) {
+  if (!/^docs\/[^/]+$/.test(relative)) return false;
+  const base = path.basename(relative);
+  return !(/^\d{2}-.+\.md$/.test(base) || /^[A-Z0-9_-]+\.md$/.test(base) || base === 'README.md');
+}
+
+/**
+ * 接入豁免清单：项目里已有的 Markdown 若不符合「中文主语言」或「docs 命名」规范，
+ * 登记到 workflow.config.json 后只降级这两类提示，历史文档不会卡住首次接入。
+ * 同一目录命中 3 篇以上折叠成 dir/**，避免清单过长。
+ */
+async function scanLegacyDocs(target) {
+  const managed = await collectManagedDocs();
+  const hits = [];
+
+  for (const file of await collectFiles(target)) {
+    const relative = path.relative(target, file).split(path.sep).join('/');
+    if (!/\.(md|markdown)$/i.test(relative)) continue;
+    if (managed.has(relative)) continue;
+
+    const content = await readFile(file, 'utf8').catch(() => '');
+    if (needsLanguageExempt(content) || needsNamingExempt(relative)) hits.push(relative);
+  }
+
+  return collapseByDir(hits.sort());
+}
+
+/** 模板托管的 Markdown：这些文件按模板规范从严校验，不进豁免清单 */
+async function collectManagedDocs() {
+  const managed = new Set();
+  for (const entry of ENTRY_LIST) {
+    const source = path.join(ROOT, entry.from);
+    if (!(await exists(source))) continue;
+    if (await isDirectory(source)) {
+      for (const file of await collectFiles(source)) {
+        const relative = path.relative(source, file).split(path.sep).join('/');
+        managed.add(`${entry.to}/${relative}`);
+      }
+    } else {
+      managed.add(entry.to);
+    }
+  }
+  return managed;
+}
+
+function collapseByDir(list) {
+  const counts = new Map();
+  for (const item of list) {
+    const dir = path.posix.dirname(item);
+    counts.set(dir, (counts.get(dir) ?? 0) + 1);
+  }
+
+  const collapsed = [];
+  const usedDirs = new Set();
+  for (const item of list) {
+    const dir = path.posix.dirname(item);
+    if (counts.get(dir) >= 3) {
+      if (usedDirs.has(dir)) continue;
+      usedDirs.add(dir);
+      collapsed.push(`${dir}/**`);
+    } else {
+      collapsed.push(item);
+    }
+  }
+  return collapsed;
 }
 
 async function main() {
@@ -244,6 +363,9 @@ async function main() {
   const created = [];
   const skipped = [];
   const warnings = [];
+
+  // 融合体检必须放在写入之前：否则模板刚注入的文件会被误判成「项目既有约定」
+  const fusion = await inspectExisting(target);
 
   for (const entry of ENTRY_LIST) {
     const source = path.join(ROOT, entry.from);
@@ -295,6 +417,25 @@ async function main() {
     }
   }
 
+  // package.json：模板的校验入口是 npm script。项目没有就生成一份，已有就另存待合并，绝不覆盖
+  const pkgSource = path.join(ROOT, 'package.json');
+  const pkgTarget = path.join(target, 'package.json');
+  if (await exists(pkgSource)) {
+    if (await exists(pkgTarget)) {
+      const extra = path.join(target, '.package.json.workflow');
+      if (!options.dryRun) {
+        await cp(pkgSource, extra);
+      }
+      warnings.push('目标已存在 package.json，未覆盖；模板校验脚本写入 .package.json.workflow，请把 scripts 合并进现有文件后删除该文件');
+      created.push('.package.json.workflow');
+    } else if (options.dryRun) {
+      created.push('package.json');
+    } else {
+      await writeFile(pkgTarget, await renderProjectPackage(target), 'utf8');
+      created.push('package.json');
+    }
+  }
+
   // ---- 技术栈体检：探测 → 分成三类 → 生成配置与项目侧登记表 ----
   const { registry } = await loadRegistry(ROOT);
   for (const item of validateRegistry(registry)) {
@@ -327,10 +468,13 @@ async function main() {
     available = available.filter((item) => item.id !== id);
   }
 
+  const legacyDocs = await scanLegacyDocs(target);
+
   const config = {
     template: 'hqc-ai-coding-work-flow',
     generatedAt: new Date().toISOString().slice(0, 10),
     trunkBranch: detectTrunk(target, options.trunk),
+    legacyDocs,
     stacks: enabled.map((stack) => stack.id),
     availableStacks: available.map((stack) => stack.id),
     stackGaps: gaps.map((stack) => ({
@@ -350,7 +494,14 @@ async function main() {
     created.push('workflow.config.json');
   }
 
-  const fusion = await inspectExisting(target);
+  if (legacyDocs.length > 0) {
+    fusion.push({
+      path: `项目历史文档 ${legacyDocs.length} 项`,
+      kind: '文档基线',
+      advice: '已登记接入豁免，不阻塞文档门禁；建议随迭代迁移为中文正文与规范命名，清单见 workflow.config.json 的 legacyDocs'
+    });
+  }
+
   const techStackPath = path.join(target, 'docs', 'TECH_STACK.md');
   const techStackDoc = renderTechStackDoc({
     generatedAt: config.generatedAt,

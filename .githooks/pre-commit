@@ -14,7 +14,18 @@ if [ -f "$ROOT/scripts/check-docs.mjs" ]; then
     echo "错误：未找到 node，请先安装 Node.js（>= 18）。" >&2
     exit 1
   }
-  (cd "$ROOT" && node scripts/check-docs.mjs)
+  if ! (cd "$ROOT" && node scripts/check-docs.mjs); then
+    cat >&2 <<'EOF'
+
+文档与规范自检未通过，提交已阻止。按问题类型处理：
+  1. 密钥或口令入库：必须改掉，这类问题不支持豁免；
+  2. 历史文档的主语言或命名：把路径登记到 workflow.config.json 的 legacyDocs；
+  3. 相对链接失效：修链接，或确认目标文件是否该入库；
+  4. 模板必需文件缺失：从模板仓库同步，见 docs/08-接入清单.md。
+处理方式详见 docs/09-常见问题.md。
+EOF
+    exit 1
+  fi
 else
   echo "提示：未找到 scripts/check-docs.mjs，已跳过文档自检。" >&2
 fi

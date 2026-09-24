@@ -15,7 +15,16 @@ command -v node >/dev/null 2>&1 || {
 }
 
 if [ -f "$ROOT/scripts/sync-agent-config.mjs" ]; then
-  (cd "$ROOT" && node scripts/sync-agent-config.mjs --check)
+  if ! (cd "$ROOT" && node scripts/sync-agent-config.mjs --check); then
+    cat >&2 <<'EOF'
+
+AI 工具入口未同步，推送已阻止。处理方式：
+  1. 改了 AGENTS.md 或引入/移除技能后，跑 node scripts/sync-agent-config.mjs 重新生成入口文件；
+  2. 引入外部技能时跑 node scripts/sync-agent-config.mjs --lock 刷新哈希；
+  3. 详见 docs/03-技能体系.md 与 docs/04-上下文与记忆治理.md。
+EOF
+    exit 1
+  fi
 fi
 
 if [ -f "$ROOT/package.json" ] && command -v npm >/dev/null 2>&1; then

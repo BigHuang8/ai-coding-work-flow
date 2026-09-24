@@ -130,6 +130,7 @@ function sha256(content) {
 async function syncGenerated(checkOnly, force) {
   const outOfSync = [];
   const updated = [];
+  const created = [];
   const foreign = [];
 
   for (const item of GENERATED) {
@@ -152,10 +153,10 @@ async function syncGenerated(checkOnly, force) {
 
     await mkdir(path.dirname(target), { recursive: true });
     await writeFile(target, item.content, 'utf8');
-    updated.push(display);
+    (current === null ? created : updated).push(display);
   }
 
-  return { outOfSync, updated, foreign };
+  return { outOfSync, created, updated, foreign };
 }
 
 async function verifyLock() {
@@ -219,7 +220,7 @@ async function main() {
     return;
   }
 
-  const { outOfSync, updated, foreign } = await syncGenerated(checkOnly, force);
+  const { outOfSync, created, updated, foreign } = await syncGenerated(checkOnly, force);
 
   if (checkOnly) {
     const { problems } = await verifyLock();
@@ -249,10 +250,15 @@ async function main() {
     console.log('  处理方式：把自有规则并入 AGENTS.md，删除该文件后重跑本脚本；确认要丢弃时加 --force');
   }
 
-  if (updated.length === 0) {
+  if (updated.length === 0 && created.length === 0) {
     console.log('✅ 入口文件已是最新，无需更新。');
-  } else {
-    console.log(`✅ 已更新 ${updated.length} 个入口文件：`);
+  }
+  if (created.length > 0) {
+    console.log(`✅ 新建 ${created.length} 个入口文件：`);
+    for (const item of created) console.log(`  - ${item}`);
+  }
+  if (updated.length > 0) {
+    console.log(`✅ 更新 ${updated.length} 个入口文件：`);
     for (const item of updated) console.log(`  - ${item}`);
   }
 }
