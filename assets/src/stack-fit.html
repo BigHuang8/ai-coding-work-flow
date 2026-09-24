@@ -1,0 +1,81 @@
+<!doctype html><html><head><meta charset="utf-8"><style>
+* { box-sizing:border-box; margin:0; padding:0; }
+:root { --ink:#16181d; --blue:#2f6fd0; --red:#e0402f; }
+body { background:#e9e9e6; font-family:'Microsoft YaHei','SimHei',sans-serif; color:var(--ink); }
+.page { padding:22px; }
+.board { position:relative; width:1300px; padding:44px 50px 38px; background:#f6f6f3; border:16px solid #d8d8d3; border-radius:30px; box-shadow: inset 0 0 0 3px #bfbfb9, inset 0 0 70px rgba(0,0,0,.045); }
+.head { position:relative; text-align:center; padding:0 40px; }
+.title { font-size:80px; font-weight:900; letter-spacing:-2px; line-height:1.02; text-shadow:3px 3px 0 rgba(22,24,29,.10); }
+.subtitle { margin-top:12px; font-size:34px; font-weight:700; letter-spacing:1px; }
+.subtitle em { font-style:normal; color:var(--blue); }
+.rows { position:relative; margin-top:30px; }
+.row { position:relative; height:172px; margin-bottom:40px; }
+.row:last-child { margin-bottom:0; }
+.band { position:absolute; inset:0; background:var(--ink); }
+.band-in { position:absolute; inset:3.5px; background:#fdfdfb; }
+.row.alt .band-in { background:#f0f0ed; }
+.icon { position:absolute; left:46px; top:50%; transform:translateY(-50%) rotate(-2deg); }
+.nm { position:absolute; left:186px; top:50%; transform:translateY(-50%); width:440px; }
+.nm .line { display:flex; align-items:baseline; gap:10px; width:fit-content; border-bottom:7px solid var(--blue); padding-bottom:6px; transform:rotate(-.35deg); }
+.nm .n { font-size:40px; font-weight:900; color:var(--blue); }
+.nm .t { font-size:44px; font-weight:900; letter-spacing:-.5px; }
+.nm .sub { margin-top:9px; font-size:21px; font-weight:700; color:#6b6f78; }
+.tag { position:absolute; right:12px; top:50%; width:566px; transform:translateY(-50%) rotate(.45deg); background:#fff; border:3.5px solid var(--ink); border-radius:10px; padding:13px 18px; box-shadow:5px 5px 0 rgba(22,24,29,.12); }
+.tag::before { content:''; position:absolute; left:-13px; top:50%; width:17px; height:17px; margin-top:-8.5px; background:#fff; border-left:3.5px solid var(--ink); border-bottom:3.5px solid var(--ink); transform:rotate(45deg) skew(-6deg,-6deg); }
+.tag .l { font-size:24.5px; line-height:1.36; }
+.tag .l:first-child { font-weight:800; }
+.tag .l + .l { margin-top:5px; color:#3c4048; }
+.tag .k { color:var(--blue); }
+.tag .r { color:var(--red); }
+.tag .g { color:var(--red); font-weight:800; }
+.arrow { position:absolute; left:44%; bottom:-30px; transform:translateX(-50%); z-index:3; }
+.foot { margin-top:26px; text-align:center; font-size:26px; font-weight:700; color:#4a4d55; }
+.foot b { color:var(--ink); }
+.deco { position:absolute; }
+</style></head><body>
+  <div class="page"><div class="board">
+    <div class="deco" style="left:14px;top:24px"><svg width="92" height="92" viewBox="0 0 96 96" fill="none" stroke="#2f6fd0" stroke-width="4.5" stroke-linecap="round"><path d="M78 16 C 40 10, 12 34, 14 66"/><path d="M4 52 C 8 60, 12 66, 15 72 C 24 68, 32 65, 40 64"/></svg></div>
+    <div class="deco" style="right:20px;top:20px"><svg width="42" height="62" viewBox="0 0 44 66" fill="none" stroke="#e0402f" stroke-width="7" stroke-linecap="round"><path d="M22 6 C 20 20, 22 30, 20 42"/><circle cx="19" cy="56" r="4.5" fill="#e0402f" stroke="none"/></svg></div>
+    <div class="head"><h1 class="title">技术栈对不上怎么办</h1><div class="subtitle">同一个能力位，只有 <em>三个出口</em></div></div>
+    <div class="rows">
+  <div class="row ">
+    <div class="band" style="clip-path:polygon(1.3% 8%, 100% 0%, 97.4% 92%, 0% 100%)"><div class="band-in" style="clip-path:polygon(1.3% 8%, 100% 0%, 97.4% 92%, 0% 100%)"></div></div>
+    <div class="icon"><svg width="94" height="94" viewBox="0 0 24 24" fill="none" stroke="#16181d" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21.801 10A10 10 0 1 1 17 3.335"/><path d="m9 11 3 3L22 4"/></svg></div>
+    <div class="nm">
+      <div class="line"><span class="n">1.</span><span class="t">已启用</span></div>
+      <div class="sub">项目用到 · 模板有规范</div>
+    </div>
+    <div class="tag">
+      <div class="l">规范进阅读顺序，命令并进 <b class="k">npm run validate</b></div>
+      <div class="l">两个条件都满足才叫适配完成</div>
+    </div>
+    <svg class="arrow" width="54" height="46" viewBox="0 0 54 46" fill="none" stroke="#16181d" stroke-width="4.2" stroke-linecap="round" stroke-linejoin="round"><path d="M28 2 C 23 12, 33 20, 27 32"/><path d="M15 22 C 20 27, 24 31, 27 36 C 32 31, 36 26, 41 22"/></svg>
+  </div>
+  <div class="row alt">
+    <div class="band" style="clip-path:polygon(0.8% 8%, 100% 0%, 97.9% 92%, 0% 100%)"><div class="band-in" style="clip-path:polygon(0.8% 8%, 100% 0%, 97.9% 92%, 0% 100%)"></div></div>
+    <div class="icon"><svg width="94" height="94" viewBox="0 0 24 24" fill="none" stroke="#16181d" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 21.73a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73z"/><path d="M12 22V12"/><polyline points="3.29 7 12 12 20.71 7"/><path d="m7.5 4.27 9 5.15"/></svg></div>
+    <div class="nm">
+      <div class="line"><span class="n">2.</span><span class="t">装箱未启用</span></div>
+      <div class="sub">模板有 · 项目没用到</div>
+    </div>
+    <div class="tag">
+      <div class="l">不注入、不进阅读顺序、不进 CI</div>
+      <div class="l">规范留库备用，<b class="r">不做物理删除</b>：换项目直接启用</div>
+    </div>
+    <svg class="arrow" width="54" height="46" viewBox="0 0 54 46" fill="none" stroke="#16181d" stroke-width="4.2" stroke-linecap="round" stroke-linejoin="round"><path d="M28 2 C 23 12, 33 20, 27 32"/><path d="M15 22 C 20 27, 24 31, 27 36 C 32 31, 36 26, 41 22"/></svg>
+  </div>
+  <div class="row ">
+    <div class="band" style="clip-path:polygon(1.3% 8%, 100% 0%, 97.4% 92%, 0% 100%)"><div class="band-in" style="clip-path:polygon(1.3% 8%, 100% 0%, 97.4% 92%, 0% 100%)"></div></div>
+    <div class="icon"><svg width="94" height="94" viewBox="0 0 24 24" fill="none" stroke="#16181d" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3"/><path d="M12 9v4"/><path d="M12 17h.01"/></svg></div>
+    <div class="nm">
+      <div class="line"><span class="n">3.</span><span class="t">缺口</span></div>
+      <div class="sub">项目用到 · 模板没有</div>
+    </div>
+    <div class="tag">
+      <div class="l">认领后补最小规范，先登记 provisional</div>
+      <div class="l"><b class="g">缺口未认领前，不得自创约定</b></div>
+    </div>
+      </div>
+    </div>
+    <div class="foot">分类口径见 <b>docs/10-技术栈适配.md</b> 一、二、四节</div>
+  </div></div></body></html>

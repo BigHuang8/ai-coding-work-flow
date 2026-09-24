@@ -127,6 +127,8 @@ cat docs/00-快速开始.md
 
 ## 八、接入业务项目
 
+![接入一个已有项目：体检、预览、注入、融合清单、认领缺口、验收](assets/onboarding.png)
+
 ```bash
 # 0. 接入体检：看项目实际用了哪些栈、哪些是缺口（只读，不改动）
 node scripts/detect-stack.mjs --target ../your-project
@@ -147,7 +149,22 @@ node scripts/bootstrap.mjs --target ../your-project --stack java-springboot,vue3
 接入后请按 [接入清单](docs/08-接入清单.md) 逐项完成定制，尤其是 `AGENTS.md` 的技术栈章节、`CODEOWNERS` 的负责人，
 以及融合清单里「已有的 AI 入口 / CI / 钩子 / validate 命令」这几项——它们不会被自动覆盖，需要人工合并。
 
-## 九、文档地图
+## 九、技术栈对不上怎么办
+
+项目用到的栈，模板不一定有；模板写好的规范，项目也不一定用得上。两个方向都有明确出口，不给「先随便写」留空间：
+
+![技术栈三类清单：已启用、装箱未启用、缺口](assets/stack-fit.png)
+
+- **已启用**：项目用到、模板有规范——规范进阅读顺序，命令并进 `npm run validate`。
+- **装箱未启用**：模板有、项目没用到——不注入、不进阅读顺序、不进 CI；规范留在仓库备用，不做物理删除。
+- **缺口**：项目用到、模板没有——不允许放着不管，按下面五步补齐：
+
+![缺口补规范五步：认领、写最小规范、登记临时、接门禁、转正](assets/gap-process.png)
+
+三类清单由 `node scripts/detect-stack.mjs` 探测得出，判定标准、最小规范四要素与严格模式切换时机见
+[技术栈适配](docs/10-技术栈适配.md)。
+
+## 十、文档地图
 
 | 文档 | 什么时候读 |
 | --- | --- |
@@ -168,7 +185,7 @@ node scripts/bootstrap.mjs --target ../your-project --stack java-springboot,vue3
 | [14-前端规范-Vue3](docs/14-前端规范-Vue3.md) | 写页面、组件、接口层或状态管理 |
 | [15-数据库设计与建表规范](docs/15-数据库设计与建表规范.md) | 建表、加字段、加索引、写迁移脚本 |
 
-## 十、维护与版本
+## 十一、维护与版本
 
 - 模板遵循语义化版本，变更记录见 `CHANGELOG.md`。
 - 配图与正文是同一份事实：改流程正文时同步跑 `node scripts/build-posters.mjs` 重出配图，排版自检不通过就不会写文件。
@@ -177,6 +194,6 @@ node scripts/bootstrap.mjs --target ../your-project --stack java-springboot,vue3
 
 ---
 
-**模板版本**：1.6.0
+**模板版本**：1.7.0
 **维护者**：hqc 团队
 **最后更新**：2026-09-24
