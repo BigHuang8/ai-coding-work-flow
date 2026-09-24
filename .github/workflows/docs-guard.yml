@@ -1,0 +1,35 @@
+# 文档同步提醒（告警不阻断）
+#
+# 目的：当代码发生变更但没有任何文档、需求或证据更新时给出提醒，
+# 避免出现「代码变了、文档没变」的静默漂移。
+#
+# 本工作流只输出警告，不会让流水线失败；是否阻断由团队自行决定。
+
+name: 文档同步提醒
+
+on:
+  pull_request:
+
+jobs:
+  docs-guard:
+    name: 检查文档是否同步
+    runs-on: ubuntu-latest
+    steps:
+      - name: 检出代码
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: 比对变更范围
+        run: |
+          git fetch --no-tags origin "${{ github.base_ref }}"
+          CHANGED=$(git diff --name-only "origin/${{ github.base_ref }}...HEAD")
+
+          CODE=$(printf '%s\n' "$CHANGED" | grep -Ev '^(docs/|spec/|skills/|scripts/|\.github/|\.gitee/|\.githooks/)' | grep -E '\.(java|ts|tsx|js|mjs|cjs|vue|py|sql)$' || true)
+          DOCS=$(printf '%s\n' "$CHANGED" | grep -E '^(docs/|spec/|SPEC\.md|MEMORY\.md|AGENTS\.md)' || true)
+
+          if [ -n "$CODE" ] && [ -z "$DOCS" ]; then
+            echo "::warning title=文档未同步::本次变更包含代码文件，但没有更新 docs/、spec/、SPEC.md、MEMORY.md 或 AGENTS.md 中的任何一项。若确实无需更新，请在 PR 描述中说明原因。"
+          else
+            echo "文档同步检查通过。"
+          fi

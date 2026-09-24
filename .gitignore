@@ -1,0 +1,54 @@
+# =====================================================
+# AI 工作流模板 - 忽略规则
+# 原则：产物、密钥、本地环境一律不入库
+# =====================================================
+
+# ==================== 密钥与环境 ====================
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+*.p12
+*.jks
+secrets/
+secrets.*
+
+# ==================== 依赖与产物 ====================
+node_modules/
+dist/
+build/
+out/
+target/
+*.class
+*.jar
+!.mvn/wrapper/maven-wrapper.jar
+
+# ==================== 日志与临时文件 ====================
+*.log
+*.log.*
+logs/
+tmp/
+temp/
+*.tmp
+*.pid
+
+# ==================== 编辑器与 IDE ====================
+.idea/
+.vscode/
+!.vscode/settings.json.example
+*.iml
+*.swp
+.DS_Store
+Thumbs.db
+
+# ==================== 本地验收证据 ====================
+# 证据目录本身要入库，但临时抓取文件不入库
+docs/verification/**/*.tmp
+docs/verification/**/*.log
+
+# ==================== 工具缓存 ====================
+.cache/
+.turbo/
+.eslintcache
+coverage/

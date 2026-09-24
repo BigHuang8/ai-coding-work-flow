@@ -1,0 +1,28 @@
+# 统一跨编辑器的基础格式约定
+# 各语言的具体规范以 docs/10-技术栈适配.md 指向的文档为准
+
+root = true
+
+[*]
+charset = utf-8
+end_of_line = lf
+insert_final_newline = true
+trim_trailing_whitespace = true
+indent_style = space
+indent_size = 2
+
+[*.{java,xml}]
+indent_size = 4
+
+[*.{md,markdown}]
+trim_trailing_whitespace = false
+max_line_length = off
+
+[*.{sh,bash}]
+indent_size = 2
+
+[*.{ps1,psm1}]
+indent_size = 4
+
+[Makefile]
+indent_style = tab

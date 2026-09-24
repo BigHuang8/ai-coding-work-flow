@@ -1,0 +1,6 @@
+{
+  "version": 1,
+  "updatedAt": "2026-09-24",
+  "note": "外部引入技能的来源与内容哈希。升级技能后必须重新执行 node scripts/sync-agent-config.mjs --lock",
+  "skills": {}
+}

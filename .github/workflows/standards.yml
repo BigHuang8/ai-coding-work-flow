@@ -1,0 +1,44 @@
+# 规范检查流水线（GitHub Actions）
+#
+# 注意：若主仓库在 Gitee，本文件不会自动生效。可选用以下方式之一：
+#   1. 在 GitHub 建立镜像仓库，由本文件执行检查；
+#   2. 在 Gitee Go 中配置等价流水线，命令与下面的 run 保持一致。
+#
+# 对应的本地门禁见 .githooks/，规则说明见 docs/05-分支提交与评审.md。
+
+name: 规范检查
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  standards:
+    name: 文档与规范
+    runs-on: ubuntu-latest
+    steps:
+      - name: 检出代码
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: 安装 Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: 文档与规范自检
+        run: node scripts/check-docs.mjs
+
+      - name: 多 AI 工具配置检查
+        run: node scripts/sync-agent-config.mjs --check
+
+      - name: 提交信息校验
+        if: github.event_name == 'pull_request'
+        run: |
+          git fetch --no-tags origin "${{ github.base_ref }}"
+          node scripts/check-commits.mjs "origin/${{ github.base_ref }}..HEAD"
+
+      - name: 运行项目校验命令
+        run: npm run validate --if-present

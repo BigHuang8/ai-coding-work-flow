@@ -1,0 +1,29 @@
+# 统一换行符，避免 Windows 与 macOS/Linux 之间产生整文件差异
+# 背景：团队混合使用 Windows 与 macOS 时，换行符不一致会让 diff 失真、评审不可读
+
+* text=auto eol=lf
+
+# 脚本：POSIX shell 必须为 LF，否则在 Linux/macOS 上无法执行
+*.sh text eol=lf
+.githooks/* text eol=lf
+
+# Windows 脚本：使用 CRLF
+*.ps1 text eol=crlf
+
+# 二进制文件：不做换行转换
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.gif binary
+*.ico binary
+*.pdf binary
+*.xlsx binary
+*.docx binary
+*.jar binary
+*.ttf binary
+*.woff binary
+*.woff2 binary
+
+# 语言检测：文档与技能目录不计入仓库语言统计
+docs/** linguist-documentation
+skills/** linguist-documentation

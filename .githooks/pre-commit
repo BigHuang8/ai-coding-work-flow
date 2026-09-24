@@ -1,0 +1,31 @@
+#!/usr/bin/env sh
+# 提交前校验：文档规范自检 + 项目统一校验命令
+# 原则：本地检查应在 60 秒内跑完，见 docs/10-技术栈适配.md
+
+set -eu
+
+HOOK_DIR=$(cd "$(dirname "$0")" && pwd)
+ROOT=$(git -C "$HOOK_DIR/.." rev-parse --show-toplevel)
+
+echo "开始 pre-commit 校验..."
+
+if [ -f "$ROOT/scripts/check-docs.mjs" ]; then
+  command -v node >/dev/null 2>&1 || {
+    echo "错误：未找到 node，请先安装 Node.js（>= 18）。" >&2
+    exit 1
+  }
+  (cd "$ROOT" && node scripts/check-docs.mjs)
+else
+  echo "提示：未找到 scripts/check-docs.mjs，已跳过文档自检。" >&2
+fi
+
+if [ -f "$ROOT/package.json" ]; then
+  if command -v npm >/dev/null 2>&1; then
+    echo "运行项目校验命令：npm run validate --if-present"
+    (cd "$ROOT" && npm run validate --if-present)
+  else
+    echo "提示：未找到 npm，已跳过项目校验。" >&2
+  fi
+fi
+
+echo "pre-commit 校验通过。"

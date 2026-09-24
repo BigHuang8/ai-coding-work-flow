@@ -1,0 +1,21 @@
+{
+  "name": "hqc-ai-coding-work-flow",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "面向团队协作的 AI 编码工作流模板",
+  "scripts": {
+    "validate": "node scripts/check-docs.mjs && node scripts/sync-agent-config.mjs --check",
+    "validate:docs": "node scripts/check-docs.mjs",
+    "validate:agents": "node scripts/sync-agent-config.mjs --check",
+    "spec:new": "node scripts/new-spec.mjs",
+    "bootstrap": "node scripts/bootstrap.mjs",
+    "sync:agents": "node scripts/sync-agent-config.mjs",
+    "lock:skills": "node scripts/sync-agent-config.mjs --lock",
+    "hooks:install": "git config core.hooksPath .githooks"
+  },
+  "engines": {
+    "node": ">=18"
+  },
+  "license": "UNLICENSED"
+}
