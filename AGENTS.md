@@ -17,7 +17,8 @@
 | 任务类型 | 必读 | 按需读 |
 | --- | --- | --- |
 | 任意任务 | 本文件、`docs/01-工作流总览.md` | — |
-| 新需求 / 新功能 | `skills/spec-writer/SKILL.md` | `templates/project/SPEC.md`、`spec/` 下同类需求 |
+| 收到 PRD / 原型 / 需求文档 | `docs/11-需求接收与拆解.md` | `skills/requirement-intake/SKILL.md`、`spec/` 下同类需求 |
+| 只有口头需求，无正式文档 | `skills/spec-writer/SKILL.md` | `templates/project/SPEC.md` |
 | 写业务代码 | 对应技术栈规范（见 `docs/10-技术栈适配.md`） | `docs/04-上下文与记忆治理.md` |
 | 修 Bug | `skills/flow-orchestrator/SKILL.md` 的排障路径 | `MEMORY.md` 中同类历史修复 |
 | 提交 / 评审 | `docs/05-分支提交与评审.md` | `skills/dual-axis-review/SKILL.md` |
@@ -32,7 +33,8 @@
 | `SPEC.md` | **需求的权威来源**：要求做什么、验收标准是什么 | 实现细节、临时讨论 |
 | `MEMORY.md` | 决策索引：为什么这么定、历史结论、当前有效口径 | 完整需求正文 |
 | `docs/*` | 规范与操作手册 | 需求正文、决策记录 |
-| `spec/<日期>-<主题>.md` | 单次需求的原始输入留档（定稿后不回改） | 结论性判断 |
+| `spec/<日期>-<主题>/` | 单次需求的输入留档：原件清单、需求条目、技术实现对照（定稿后不回改） | 结论性判断、需求的权威定义 |
+| `spec/.../原始需求/`、`spec/.../原型/` | 外部交付的原件（只增不改） | 任何内部结论与技术内容 |
 | `docs/verification/<日期>-<主题>/` | 验收证据：截图、命令输出、测试报告 | 需求正文 |
 | `docs/plans/`、`docs/designs/` | 实现计划与设计稿留档 | 需求正文 |
 
@@ -63,7 +65,7 @@
 
 | 阶段 | 产物 | 门禁（未通过不得进入下一阶段） |
 | --- | --- | --- |
-| ① 需求澄清 | `spec/` 需求页 + `SPEC.md` 条目 | 第三方能用自己的话复述一遍且无歧义 |
+| ① 需求澄清 | `spec/<日期>-<主题>/` 需求目录 + `SPEC.md` 条目 | 第三方能用自己的话复述一遍且无歧义 |
 | ② 方案设计 | `docs/designs/` 设计稿 + `docs/plans/` 计划 | 明确列出改动文件、接口变化、失败回滚方式 |
 | ③ 实现 | 代码 + 测试 | 新增或修改的逻辑有对应测试，且校验命令通过 |
 | ④ 验证 | `docs/verification/` 证据 | 证据可被他人按文档复现 |
@@ -78,7 +80,7 @@
 | --- | --- |
 | 安装 Git 钩子 | `bash scripts/install-hooks.sh`（Windows：`pwsh scripts/install-hooks.ps1`） |
 | 文档自检 | `node scripts/check-docs.mjs` |
-| 新建需求留档 | `node scripts/new-spec.mjs --title "客户列表导出"` |
+| 新建需求目录 | `node scripts/new-spec.mjs --title "客户列表导出" --with-artifacts --with-verification` |
 | 注入到业务项目 | `node scripts/bootstrap.mjs --target ../your-project` |
 | 同步多 AI 工具配置 | `node scripts/sync-agent-config.mjs` |
 | 模板自身校验 | `npm run validate` |
@@ -90,6 +92,7 @@
 | 技能 | 用途 |
 | --- | --- |
 | `flow-orchestrator` | 编排六阶段流程，判断当前处于哪一步、下一步做什么 |
+| `requirement-intake` | 接收 PRD / 原型，归档原件并逐条标注技术实现 |
 | `spec-writer` | 把口头需求变成可验收的 `SPEC.md` 条目与 `spec/` 留档 |
 | `dual-axis-review` | 双轴评审：规范轴（是否合规）与需求轴（是否做对） |
 | `evidence-driven-verification` | 用可复现的证据代替「我觉得没问题」 |

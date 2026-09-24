@@ -208,15 +208,44 @@ async function checkNaming(abs) {
     }
   }
 
-  if (/^spec\/[^/]+$/.test(r) && DOC_EXT.test(base) && base !== 'README.md') {
-    if (!/^\d{8}-.+\.md$/.test(base)) {
+}
+
+/** E4xx：spec 目录结构检查
+ *  允许两种形态：
+ *    目录 spec/<YYYYMMDD>-<主题>/  （推荐，含原始需求、原型、需求与技术对照.md）
+ *    文件 spec/<YYYYMMDD>-<主题>.md（兼容轻量需求）
+ */
+async function checkSpecStructure() {
+  const specDir = path.join(ROOT, 'spec');
+  if (!(await exists(specDir))) return;
+
+  const entries = await readdir(specDir, { withFileTypes: true });
+  for (const entry of entries) {
+    if (entry.name === 'README.md') continue;
+
+    if (!/^\d{8}-/.test(entry.name)) {
       issues.push({
         ruleId: 'E402',
-        file: r,
-        message: 'spec 目录下的需求留档命名不符合规范',
-        detail: '应为「YYYYMMDD-中文主题.md」',
+        file: `spec/${entry.name}`,
+        message: 'spec 目录下的条目命名不符合规范',
+        detail: '应以日期开头，形如「20260924-客户列表团队筛选」',
         suggestion: '使用 node scripts/new-spec.mjs --title "主题" 生成，可自动带上日期'
       });
+      continue;
+    }
+
+    if (entry.isDirectory()) {
+      const mainDoc = path.join(specDir, entry.name, '需求与技术对照.md');
+      if (!(await exists(mainDoc))) {
+        issues.push({
+          level: 'warn',
+          ruleId: 'E403',
+          file: `spec/${entry.name}`,
+          message: '需求目录缺少主文档「需求与技术对照.md」',
+          detail: '该文件承载需求编号、验收标准与技术实现对照，是设计与验收的依据',
+          suggestion: '纳入该文件；技术实现写在对照表里，不要写回 PRD 原件'
+        });
+      }
     }
   }
 }
@@ -291,6 +320,7 @@ async function main() {
   }
 
   await checkRequiredFiles();
+  await checkSpecStructure();
 
   const errors = issues.filter((item) => (item.level ?? 'error') === 'error');
   const warnings = issues.filter((item) => item.level === 'warn');

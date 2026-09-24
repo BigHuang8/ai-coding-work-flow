@@ -29,7 +29,8 @@
 | 任务类型 | 必读 | 按需读 |
 | --- | --- | --- |
 | 任意任务 | 本文件、`docs/01-工作流总览.md` | — |
-| 新需求 | `skills/spec-writer/SKILL.md` | `SPEC.md`、`spec/` 下同类需求 |
+| 收到 PRD / 原型 | `docs/11-需求接收与拆解.md` | `skills/requirement-intake/SKILL.md`、`spec/` 下同类需求 |
+| 只有口头需求 | `skills/spec-writer/SKILL.md` | `SPEC.md` |
 | <前端模块> | `docs/<前端规范>.md` | `docs/API_CONTRACT.md` |
 | <后端模块> | `docs/<后端规范>.md` | `docs/API_CONTRACT.md` |
 | 提交 / 评审 | `docs/05-分支提交与评审.md` | `skills/dual-axis-review/SKILL.md` |
@@ -44,7 +45,7 @@
 | `MEMORY.md` | 决策索引：为什么这么定、当前有效口径 |
 | `docs/API_CONTRACT.md` | 接口契约：响应外壳、错误码、分页结构 |
 | `docs/*` | 规范与操作手册 |
-| `spec/<日期>-<主题>.md` | 一次需求的原始输入留档 |
+| `spec/<日期>-<主题>/` | 一次需求的输入留档：原件、需求条目、技术实现对照（`原始需求/`、`原型/` 只增不改） |
 | `docs/verification/<日期>-<主题>/` | 验收证据 |
 
 **同一事实只写一处。** 判断口诀：「要求做什么」写 `SPEC.md`，「为什么这么定」写 `MEMORY.md`，「怎么做」写 `docs/`，「这次改了什么、凭什么说改对了」写 `spec/` 与 `docs/verification/`。
@@ -88,7 +89,7 @@
 | 后端测试 | `<命令>` |
 | 完整校验 | `npm run validate` |
 | 文档自检 | `node scripts/check-docs.mjs` |
-| 新建需求留档 | `node scripts/new-spec.mjs --title "<主题>"` |
+| 新建需求目录 | `node scripts/new-spec.mjs --title "<主题>" --with-artifacts --with-verification` |
 
 ## 八、提交规范
 
