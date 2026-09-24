@@ -4,6 +4,14 @@
 
 格式参考 [Keep a Changelog](https://keepachangelog.com/zh-CN/1.1.0/)，版本号遵循语义化版本。
 
+## [1.11.3] - 2026-09-24
+
+### 文档
+
+- 说明 GitLab 合并请求模板为何叫 `Default.md`：GitLab 用**文件名当模板名**（显示在新建合并请求的「Choose a template」
+  下拉框里），命名为 `Default`（大小写不敏感）的那份才会自动套用；要加模板另建 `<名字>.md` 放进
+  `.gitlab/merge_request_templates/` 即可。说明同时写进 `docs/05-分支提交与评审.md` 与该模板文件顶部注释。
+
 ## [1.11.2] - 2026-09-24
 
 ### 变更
