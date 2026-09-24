@@ -5,15 +5,17 @@
   "type": "module",
   "description": "面向团队协作的 AI 编码工作流模板",
   "scripts": {
-    "validate": "node scripts/check-docs.mjs && node scripts/check-skills.mjs && node scripts/detect-stack.mjs --check && node scripts/sync-agent-config.mjs --check",
+    "validate": "node scripts/check-docs.mjs && node scripts/check-skills.mjs && node scripts/detect-stack.mjs --check && node scripts/sync-agent-config.mjs --check && node scripts/sync-platform.mjs --check",
     "validate:docs": "node scripts/check-docs.mjs",
     "validate:skills": "node scripts/check-skills.mjs",
     "validate:stacks": "node scripts/detect-stack.mjs --check",
     "validate:agents": "node scripts/sync-agent-config.mjs --check",
+    "validate:platform": "node scripts/sync-platform.mjs --check",
     "stack:detect": "node scripts/detect-stack.mjs",
     "spec:new": "node scripts/new-spec.mjs",
     "bootstrap": "node scripts/bootstrap.mjs",
     "sync:agents": "node scripts/sync-agent-config.mjs",
+    "sync:platform": "node scripts/sync-platform.mjs",
     "lock:skills": "node scripts/sync-agent-config.mjs --lock",
     "hooks:install": "git config core.hooksPath .githooks"
   },

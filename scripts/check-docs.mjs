@@ -165,10 +165,34 @@ function checkLanguage(abs, content) {
   }
 }
 
+/**
+ * E307：会随模板注入业务项目的文档，不得链接到只有本仓库才有的路径。
+ * docs/、skills/、stacks/、spec/、db/ 与根级 AGENTS.md/SPEC.md/MEMORY.md 都会注入业务项目，
+ * 它们一旦链接 templates/ 或根 README.md、CHANGELOG.md，在业务项目里就是断链——
+ * 本仓库里却因为文件存在而不报错，属于「只在接入后才炸」的隐形问题。
+ */
+const INJECTED_DOC_ROOTS = ['docs/', 'skills/', 'stacks/', 'spec/', 'db/'];
+const INJECTED_DOC_FILES = ['AGENTS.md', 'SPEC.md', 'MEMORY.md'];
+
+function isInjectedDoc(file) {
+  if (INJECTED_DOC_FILES.includes(file)) return true;
+  return INJECTED_DOC_ROOTS.some((prefix) => file.startsWith(prefix));
+}
+
+function isTemplateOnlyPath(relTarget) {
+  return (
+    relTarget.startsWith('templates/') ||
+    relTarget === 'README.md' ||
+    relTarget === 'CHANGELOG.md' ||
+    relTarget.startsWith('..')
+  );
+}
+
 /** E2xx：相对链接有效性 */
 function checkLinks(abs, content) {
   const lines = content.split(/\r?\n/);
   const linkRe = /\[[^\]]*\]\(([^)\s]+)\)/g;
+  const self = rel(abs);
 
   lines.forEach((lineText, index) => {
     let match;
@@ -181,10 +205,21 @@ function checkLinks(abs, content) {
       if (/[<>*]/.test(target)) continue;
 
       const resolved = path.resolve(path.dirname(abs), decodeURI(target));
+      const relTarget = path.relative(ROOT, resolved).split(path.sep).join('/');
+      if (isInjectedDoc(self) && isTemplateOnlyPath(relTarget)) {
+        issues.push({
+          ruleId: 'E307',
+          file: self,
+          line: index + 1,
+          message: `共享文档链接到仅模板仓库存在的路径：${target}`,
+          detail: '该文档会注入业务项目，而 templates/、根 README.md、CHANGELOG.md 不会随模板注入，届时链接必然失效',
+          suggestion: '改成纯文本说明（例如「见模板仓库的 templates/platform/README.md」），或改链到会注入的文档'
+        });
+      }
       if (!existsSync(resolved)) {
         issues.push({
           ruleId: 'E201',
-          file: rel(abs),
+          file: self,
           line: index + 1,
           message: `相对链接指向的文件不存在：${target}`,
           suggestion: '修正路径，或确认目标文件是否已被移动或删除'

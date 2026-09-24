@@ -4,6 +4,35 @@
 
 格式参考 [Keep a Changelog](https://keepachangelog.com/zh-CN/1.1.0/)，版本号遵循语义化版本。
 
+## [1.10.0] - 2026-09-24
+
+### 变更
+
+- **平台产物统一收进 `templates/platform/`**：GitHub 那套（`.github/workflows/`、`.github/CODEOWNERS`、
+  `.github/PULL_REQUEST_TEMPLATE.md`）从仓库根移入 `templates/platform/github/`，Gitee 新增 `templates/platform/gitee/`，
+  与既有的 `templates/platform/gitlab/` 三平台对称。**目录内的相对路径就是注入到项目里的位置**，约定见 `templates/platform/README.md`。
+  原先根目录 `.github/` 里放着 CI、CODEOWNERS 与 PR 模板，但本仓库只有 Gitee 远程——那是永不执行的死配置，
+  现在根目录只保留生成的 `copilot-instructions.md`（Copilot 插件的固定路径，与托管平台无关）。
+- `bootstrap` 支持三平台：新增 `gitee`；探测改为「文件标记 + `origin` 地址交叉判断」，冲突时以 origin 为准并在输出里点名；
+  只有文件标记时按 GitLab → Gitee → GitHub 取第一个，都没有时默认 GitLab；`--platform` 传未知值改为回退自动探测。
+  接入提示第 4 条按平台给出代码所有者配置方式（Gitee 不支持 CODEOWNERS）。
+
+### 新增
+
+- **`scripts/sync-platform.mjs`**：平台产物一致性门禁。仓库根的平台副本（本仓库是 `.gitee/PULL_REQUEST_TEMPLATE.md`）
+  由它从 `templates/platform/` 生成，`--check`（E801）已接进 `npm run validate`、`validate:platform`
+  与两个 Git 钩子的降级分支；规则是**只刷新根目录已存在的同名文件**，不主动新建。
+  业务项目里没有模板源，比对自动跳过（退出码 0）；但模板仓库缺 `templates/platform/` 会报 E802 拦下。
+- 融合清单新增 `.gitee`（合并请求模板）与 `.workflow`（Gitee Go 流水线）两类已有约定的合并方式。
+- **新增 E307 门禁**：会注入业务项目的共享文档（`docs/`、`skills/`、`stacks/`、`spec/`、`db/`、根级 `AGENTS.md` 等）
+  不得链接到 `templates/`、根 `README.md`、`CHANGELOG.md` 或仓库外路径——这些路径在业务项目里不存在，
+  而在模板仓库里能通过校验，属于「接入后才炸」的隐形断链（`stacks/README.md`、`docs/08-接入清单.md` 都踩过）。
+
+### 文档
+
+- `README.md` 目录树与平台段落、`docs/08-接入清单.md`（三平台表、五步探测规则、步骤 4 校验命令、步骤 7 CI 配置）、
+  `docs/09-常见问题.md` 第十八节、`docs/02`、`docs/05`、`docs/10` 同步改为三平台表述。
+
 ## [1.9.0] - 2026-09-24
 
 ### 新增
