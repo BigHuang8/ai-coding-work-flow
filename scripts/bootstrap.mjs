@@ -352,6 +352,34 @@ async function isTemplateGenerated(full) {
   return content.includes('本文件由 node scripts/sync-agent-config.mjs 生成');
 }
 
+/**
+ * 模板规则是否已经合并进目标文件：模板里所有有效行（忽略空行与注释）都能在目标
+ * 文件中找到，就认定人工合并已完成。这样「合并完删掉 .workflow 副本」的项目再次
+ * 运行 bootstrap 时，不会又冒出一份待合并文件。
+ */
+async function isMergedInto(sourceFile, targetFile) {
+  const effectiveLines = async (file) =>
+    (await readFile(file, 'utf8'))
+      .split(/\r?\n/)
+      .map((line) => line.trim())
+      .filter((line) => line.length > 0 && !line.startsWith('#'));
+  const wanted = await effectiveLines(sourceFile);
+  const present = new Set(await effectiveLines(targetFile));
+  return wanted.length > 0 && wanted.every((line) => present.has(line));
+}
+
+/** package.json 同理：模板脚本全部以相同内容存在，视为已合并，不再生成待合并副本 */
+async function isPackageScriptsMerged(pkgPath) {
+  try {
+    const templateScripts = JSON.parse(await readFile(path.join(ROOT, 'package.json'), 'utf8')).scripts ?? {};
+    const currentScripts = JSON.parse(await readFile(pkgPath, 'utf8')).scripts ?? {};
+    const names = Object.keys(templateScripts);
+    return names.length > 0 && names.every((name) => currentScripts[name] === templateScripts[name]);
+  } catch {
+    return false;
+  }
+}
+
 async function inspectExisting(target) {
   const items = [];
 
@@ -584,6 +612,9 @@ async function main() {
       if (options.update) {
         // 已接入项目的刷新：不重复生成待合并文件，缺规则时由门禁兜底
         skipped.push('.gitignore');
+      } else if (await isMergedInto(gitignoreSource, gitignoreTarget)) {
+        // 上一轮已经合并过：副本文件被人工删掉后不该再冒出来
+        skipped.push('.gitignore（模板规则已全部存在，无需再合并）');
       } else {
         const extra = path.join(target, '.gitignore.workflow');
         if (!options.dryRun) {
@@ -607,6 +638,8 @@ async function main() {
     if (await exists(attrTarget)) {
       if (options.update) {
         skipped.push('.gitattributes');
+      } else if (await isMergedInto(attrSource, attrTarget)) {
+        skipped.push('.gitattributes（模板规则已全部存在，无需再合并）');
       } else {
         const extra = path.join(target, '.gitattributes.workflow');
         if (!options.dryRun) {
@@ -630,6 +663,8 @@ async function main() {
     if (await exists(pkgTarget)) {
       if (options.update) {
         skipped.push('package.json');
+      } else if (await isPackageScriptsMerged(pkgTarget)) {
+        skipped.push('package.json（模板脚本已全部存在，无需再合并）');
       } else {
         const extra = path.join(target, '.package.json.workflow');
         if (!options.dryRun) {
