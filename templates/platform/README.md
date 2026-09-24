@@ -34,4 +34,5 @@
 这类「根副本」由 `node scripts/sync-platform.mjs` 从本目录生成并校验，`--check` 已接进门禁，两处不会各自漂移。
 
 规则是**只刷新根目录已存在的同名文件**，不主动新建：本仓库没有 GitHub 远程，根目录就不该出现 `.github/workflows/`。
-`.github/copilot-instructions.md` 是 AI 工具入口（由 `AGENTS.md` 生成），不属于平台产物，不受这套规则影响。
+`.github/copilot-instructions.md` 是 AI 工具入口（由 `AGENTS.md` 生成），不属于平台产物，不受这套规则影响；
+不用 Copilot 的项目可以在 `workflow.config.json` 的 `aiEntries` 里去掉它，`templates/` 这边无需改动。

@@ -16,10 +16,12 @@ import { readdir, readFile, writeFile, mkdir, access } from 'node:fs/promises';
 import { createHash } from 'node:crypto';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { AI_ENTRY_KEYS } from './lib/ai-entries.mjs';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const LOCK_FILE = path.join(ROOT, 'skills-lock.json');
 const SKILLS_DIR = path.join(ROOT, '.agents', 'skills');
+const CONFIG_FILE = path.join(ROOT, 'workflow.config.json');
 
 /** 生成文件的标记：没有这个标记的同名文件视为项目自有文件，默认不覆盖 */
 const GENERATED_MARKER =
@@ -82,14 +84,36 @@ const COPILOT_ENTRY = `${GENERATED_MARKER}
 `;
 
 const GENERATED = [
-  { file: 'CLAUDE.md', content: CLAUDE_ENTRY, legacyHeads: ['# Claude Code 入口'] },
+  { key: 'claude', file: 'CLAUDE.md', content: CLAUDE_ENTRY, legacyHeads: ['# Claude Code 入口'] },
   {
+    key: 'cursor',
     file: path.join('.cursor', 'rules', '00-workflow.mdc'),
     content: CURSOR_RULE,
     legacyHeads: ['---\ndescription: 团队 AI 工作流规范入口', '---\r\ndescription: 团队 AI 工作流规范入口']
   },
-  { file: path.join('.github', 'copilot-instructions.md'), content: COPILOT_ENTRY, legacyHeads: ['# Copilot 说明'] }
+  {
+    key: 'copilot',
+    file: path.join('.github', 'copilot-instructions.md'),
+    content: COPILOT_ENTRY,
+    legacyHeads: ['# Copilot 说明']
+  }
 ];
+
+/**
+ * 读取 workflow.config.json 的 aiEntries，决定为哪些 AI 工具生成入口。
+ * 没有配置文件（模板仓库自身）、字段缺失或内容非法时，按全部启用处理。
+ */
+async function loadEnabledEntries() {
+  try {
+    const config = JSON.parse(await readFile(CONFIG_FILE, 'utf8'));
+    if (Array.isArray(config.aiEntries)) {
+      return AI_ENTRY_KEYS.filter((key) => config.aiEntries.map(String).includes(key));
+    }
+  } catch {
+    // 没有 workflow.config.json 或读不动：走默认全量
+  }
+  return [...AI_ENTRY_KEYS];
+}
 
 /**
  * 判断入口文件是不是本脚本产出的。
@@ -127,15 +151,23 @@ function sha256(content) {
   return createHash('sha256').update(content).digest('hex');
 }
 
-async function syncGenerated(checkOnly, force) {
+async function syncGenerated(checkOnly, force, enabled) {
   const outOfSync = [];
   const updated = [];
   const created = [];
   const foreign = [];
+  const disabled = [];
 
   for (const item of GENERATED) {
     const target = path.join(ROOT, item.file);
     const display = item.file.split(path.sep).join('/');
+
+    // 已在 aiEntries 里停用的工具：不生成、不校验，但文件还在时提示删除
+    if (!enabled.includes(item.key)) {
+      if (await exists(target)) disabled.push(display);
+      continue;
+    }
+
     const current = (await exists(target)) ? await readFile(target, 'utf8') : null;
 
     if (current === item.content) continue;
@@ -156,7 +188,7 @@ async function syncGenerated(checkOnly, force) {
     (current === null ? created : updated).push(display);
   }
 
-  return { outOfSync, created, updated, foreign };
+  return { outOfSync, created, updated, foreign, disabled };
 }
 
 async function verifyLock() {
@@ -220,7 +252,16 @@ async function main() {
     return;
   }
 
-  const { outOfSync, created, updated, foreign } = await syncGenerated(checkOnly, force);
+  const enabled = await loadEnabledEntries();
+  const { outOfSync, created, updated, foreign, disabled } = await syncGenerated(checkOnly, force, enabled);
+
+  if (disabled.length > 0) {
+    console.log('⚠️ 以下入口文件已在 workflow.config.json 的 aiEntries 里停用，文件仍在（不影响门禁，建议删除）：');
+    for (const item of disabled) console.log(`  - ${item}`);
+  }
+  if (enabled.length < AI_ENTRY_KEYS.length) {
+    console.log(`本次启用 ${enabled.length} 个 AI 工具入口：${enabled.join('、')}（可改 workflow.config.json 的 aiEntries）。`);
+  }
 
   if (checkOnly) {
     const { problems } = await verifyLock();

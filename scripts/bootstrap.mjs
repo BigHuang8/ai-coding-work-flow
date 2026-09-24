@@ -27,6 +27,7 @@ import {
   scanTarget,
   validateRegistry
 } from './lib/stacks.mjs';
+import { AI_ENTRY_KEYS } from './lib/ai-entries.mjs';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 
@@ -34,7 +35,7 @@ const SKIP_DIRS = new Set(['.git', 'node_modules', 'dist', 'target', 'build', 'c
 
 /**
  * 融合类文件：项目往往会自己维护，即使 --update 也不覆盖，只提示合并。
- * 其余托管文件（docs、skills、scripts、.githooks、.github/copilot-instructions.md、assets 等）在 --update 时按模板最新版刷新。
+ * 其余托管文件（docs、skills、scripts、.githooks、assets 等）在 --update 时按模板最新版刷新。
  */
 const FUSION_KEEP = new Set(['.env.example']);
 
@@ -68,7 +69,6 @@ const ENTRY_LIST = [
   { from: 'stacks', to: 'stacks' },
   { from: 'scripts', to: 'scripts' },
   { from: '.githooks', to: '.githooks' },
-  { from: '.github/copilot-instructions.md', to: '.github/copilot-instructions.md' },
   { from: '.editorconfig', to: '.editorconfig' },
   { from: '.tasksignore', to: '.tasksignore' },
   { from: 'skills-lock.json', to: 'skills-lock.json' },
@@ -680,11 +680,15 @@ async function main() {
 
   let legacyDocs = await scanLegacyDocs(target);
   const previousConfigPath = path.join(target, 'workflow.config.json');
+  let aiEntries = [...AI_ENTRY_KEYS];
   if ((await exists(previousConfigPath)) && !options.force) {
-    // 用户可能手工增删过豁免清单，非 --force 时保留既有内容，避免每次重跑都被覆盖
+    // 用户可能手工增删过豁免清单或 AI 入口清单，非 --force 时保留既有内容，避免每次重跑都被覆盖
     try {
       const previous = JSON.parse(await readFile(previousConfigPath, 'utf8'));
       if (Array.isArray(previous.legacyDocs)) legacyDocs = previous.legacyDocs.map(String);
+      if (Array.isArray(previous.aiEntries)) {
+        aiEntries = AI_ENTRY_KEYS.filter((key) => previous.aiEntries.map(String).includes(key));
+      }
     } catch {
       // 旧配置读不动时按本次扫描结果写入
     }
@@ -696,6 +700,7 @@ async function main() {
     trunkBranch: detectTrunk(target, options.trunk),
     platform: platform.id,
     legacyDocs,
+    aiEntries,
     stacks: enabled.map((stack) => stack.id),
     availableStacks: available.map((stack) => stack.id),
     stackGaps: gaps.map((stack) => ({
@@ -764,6 +769,10 @@ async function main() {
         warnings.push('未能自动生成 AI 工具入口，请手动运行：node scripts/sync-agent-config.mjs');
       }
     }
+  } else {
+    synced.push(
+      `预览模式不写文件：正式执行会按 AGENTS.md 生成 AI 工具入口，清单见 workflow.config.json 的 aiEntries（默认 ${AI_ENTRY_KEYS.join('、')}）`
+    );
   }
 
   console.log(options.dryRun ? '预览模式（未写入任何文件）' : options.update ? '模板更新完成' : '注入完成');
@@ -791,7 +800,7 @@ async function main() {
 
   if (synced.length > 0) {
     console.log('');
-    console.log('已按目标项目的 AGENTS.md 生成 AI 工具入口：');
+    console.log(options.dryRun ? 'AI 工具入口（预览）：' : '已按目标项目的 AGENTS.md 生成 AI 工具入口：');
     for (const item of synced) console.log(`  ~ ${item}`);
   }
   if (skipped.length > 0) {
@@ -824,6 +833,7 @@ async function main() {
     console.log('  5. 安装 Git 钩子：bash scripts/install-hooks.sh（或 pwsh scripts/install-hooks.ps1）');
     console.log('  6. 补全 docs/TECH_STACK.md 里的负责人与期限（缺口未认领等于没接入）');
     console.log('  7. 运行自检：npm run validate 与 node scripts/detect-stack.mjs --check');
+    console.log('  8. 团队不用的 AI 工具：在 workflow.config.json 的 aiEntries 里去掉后重跑 sync-agent-config.mjs，不留空目录');
   }
 }
 

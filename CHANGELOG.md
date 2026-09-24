@@ -4,6 +4,21 @@
 
 格式参考 [Keep a Changelog](https://keepachangelog.com/zh-CN/1.1.0/)，版本号遵循语义化版本。
 
+## [1.11.0] - 2026-09-24
+
+### 新增
+
+- **AI 工具入口可开关**：`workflow.config.json` 新增 `aiEntries` 字段（默认 `["claude", "cursor", "copilot"]`），
+  决定 `sync-agent-config.mjs` 生成哪些入口。团队不用的工具去掉即可，项目里不再留下用不到的目录——
+  典型场景是 Gitee / GitLab 项目不用 Copilot，却因为固定路径 `.github/copilot-instructions.md` 平白多出一个 `.github/`。
+  停用后文件仍在时会提示删除；清单常量集中在 `scripts/lib/ai-entries.mjs`，两个脚本共用一份。
+
+### 变更
+
+- `bootstrap` 不再直接注入 `.github/copilot-instructions.md`：AI 入口统一由 `sync-agent-config.mjs` 生成，
+  同一份产物不再有「静态复制 + 生成」两个来源；`--update` 与重跑都会保留目标项目 `aiEntries` 的设置。
+  预览模式会明确说明将生成哪些入口（dry-run 不再谎报会创建一个实际由生成器产出的文件）。
+
 ## [1.10.0] - 2026-09-24
 
 ### 变更

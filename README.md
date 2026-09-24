@@ -26,6 +26,7 @@
 | 数据库口令、API Key 被写进文档并提交 | 密钥零入库 + 提交前扫描，见 [安全与密钥](docs/07-安全与密钥.md) |
 | 规范只写在文档里，没人执行 | `.githooks/` 与平台 CI（`.github/workflows/`、`.gitlab-ci.yml`）把规范变成「失败即阻断」的检查 |
 | 公司内网用 GitLab，模板却只带 GitHub 的 CI 与 PR 模板 | GitHub / GitLab / Gitee 三套产物都在 [templates/platform](templates/platform/README.md)，接入时自动探测；探测错了用 `--platform` 纠正 |
+| 项目用不到某个 AI 工具，却被迫留下它的配置目录 | `workflow.config.json` 的 `aiEntries` 决定生成哪些入口，去掉谁就不生成谁（例如不用 Copilot 就没有 `.github/`） |
 | 各人用自己机器上的私有技能，换台机器就复现不了 | 只允许仓库内技能（`skills/` 与 `.agents/skills/`），`scripts/check-skills.mjs` 负责拦住越界来源，见 [技能体系](docs/03-技能体系.md) 第五节 |
 | 新人不知道从哪读起 | [快速开始](docs/00-快速开始.md) + [接入清单](docs/08-接入清单.md) |
 | 已有项目接入时被模板冲掉原有约定 | 只补不改：先体检、再按融合清单逐项合并，见 [技术栈适配](docs/10-技术栈适配.md) 第二节 |
@@ -124,7 +125,7 @@
 ├── templates/project/         注入到业务项目的文件模板
 ├── templates/platform/        平台产物：github / gitlab / gitee 各一套，按探测结果注入
 ├── skills-lock.json           外部引入技能的来源与哈希锁定
-└── （生成文件）                CLAUDE.md、.cursor/rules/、.github/copilot-instructions.md
+└── （生成文件）                CLAUDE.md、.cursor/rules/、.github/copilot-instructions.md（按 aiEntries 生成）
 ```
 
 最后两行是自动生成的：`AGENTS.md` 是唯一事实来源，`node scripts/sync-agent-config.mjs` 负责为 Claude Code、Cursor、Copilot 生成指向它的入口，
@@ -227,6 +228,6 @@ Gitee 项目得到 `.gitee/PULL_REQUEST_TEMPLATE.md`（Gitee Go 流水线在网�
 
 ---
 
-**模板版本**：1.10.0
+**模板版本**：1.11.0
 **维护者**：hqc 团队
 **最后更新**：2026-09-24
