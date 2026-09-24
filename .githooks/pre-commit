@@ -19,6 +19,10 @@ else
   echo "提示：未找到 scripts/check-docs.mjs，已跳过文档自检。" >&2
 fi
 
+if [ -f "$ROOT/scripts/check-skills.mjs" ]; then
+  (cd "$ROOT" && node scripts/check-skills.mjs)
+fi
+
 if [ -f "$ROOT/package.json" ]; then
   if command -v npm >/dev/null 2>&1; then
     echo "运行项目校验命令：npm run validate --if-present"

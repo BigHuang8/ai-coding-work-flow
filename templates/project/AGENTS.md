@@ -35,6 +35,7 @@
 | 写后端代码 | `docs/13-后端规范-Java-Spring.md` | `docs/API_CONTRACT.md`、`SPRING_GUIDELINES.md` |
 | 建表 / 改表 / 写 SQL | `docs/15-数据库设计与建表规范.md` | `db/建表模板.sql`、`db/README.md` |
 | 建分支 / 提交 / 解冲突 | `docs/05-分支提交与评审.md` 第三、八节 | `skills/dual-axis-review/SKILL.md` |
+| 找技能 / 引入技能 | `docs/03-技能体系.md` 第五、六节 | `skills/README.md`、`skills-lock.json` |
 | 多人并行开发 | `docs/02-团队协作与角色.md` 第四节 | `node scripts/tasks.mjs` |
 | 改公共代码 / 接口 / 表结构 | `docs/12-影响面与回归防护.md` | `skills/impact-analysis/SKILL.md` |
 | 交付 / 上线 | `docs/06-验收与证据留档.md`、`docs/07-安全与密钥.md` | `DEPLOYMENT_GUIDE.md` |
@@ -65,6 +66,7 @@
 6. 改公共代码、接口、数据结构或配置前，先记录测试基线并反查调用方；改动后做回归验证并与基线对比。
 7. 表结构变更只通过 `db/migration/V<YYYYMMDDHHmm>__<描述>.sql` 脚本进行，脚本只增不改。
 8. 提交前先同步主干，按第八节检查提交信息与分支命名；不向主干强推。
+9. 只使用仓库内技能：自研在 `skills/`，引入在 `.agents/skills/`；需要新能力时先引入到仓库再使用。
 
 ### 禁止
 
@@ -77,6 +79,7 @@
 7. 禁止编造未经验证的 API、命令与配置项。
 8. 禁止直连生产库改表、禁止在业务代码里执行 DDL、禁止修改已执行过的迁移脚本。
 9. 禁止在主干分支上直接提交业务改动。
+10. 禁止调用个人目录下的技能（如 `~/.codex/skills`、`~/.claude/skills`）或临时安装来源不明的技能包。
 
 ## 六、接口契约要点
 

@@ -4,6 +4,28 @@
 
 格式参考 [Keep a Changelog](https://keepachangelog.com/zh-CN/1.1.0/)，版本号遵循语义化版本。
 
+## [1.4.0] - 2026-09-24
+
+### 新增
+
+- **技能来源准入（硬规则）**：开发本项目**只允许使用仓库内技能**——自研在 `skills/`，引入在 `.agents/skills/` 并登记 `skills-lock.json`；
+  个人目录下的技能（`~/.codex/skills`、`~/.claude/skills` 等）可以用于探索，但不得作为交付依据。
+- **`scripts/check-skills.mjs`**：技能来源与结构自检，规则 E601~E606——目录名、缺 `SKILL.md`、
+  front-matter（`name` / `description` / 与目录名一致）、白名单之外的 `SKILL.md`、
+  引用仓库外个人目录或绝对路径、`skills/README.md` 清单与目录不一致。
+- 门禁接入：`npm run validate`（新增 `validate:skills`）、`.githooks/pre-commit`、`.github/workflows/standards.yml`。
+- 制度层同步：`AGENTS.md` 与 `templates/project/AGENTS.md` 的硬性规则与阅读顺序、`docs/03-技能体系.md` 第五节
+  （准入白名单、禁止来源、四条理由、例外与检查项）、`skills/README.md`、`docs/00-快速开始.md`（底线增至四条）、
+  `docs/08-接入清单.md`（校验命令含技能检查）、`.github` 与 `.gitee` 的 PR 自查清单。
+- 生成的三个 AI 工具入口（`CLAUDE.md`、`.cursor/rules/00-workflow.mdc`、`.github/copilot-instructions.md`）
+  均已加入「只使用仓库内技能」这一条。
+
+### 说明
+
+- 引入技能的来源与哈希仍由 `node scripts/sync-agent-config.mjs --check` 校验；`check-skills.mjs` 只管「来源白名单 + 结构规范」，
+  两者职责不重叠。
+- 白名单之外的技能目录（例如个人工具专属的 `.claude/skills/`）会直接报错，不做静默豁免；确需例外时改脚本并走评审。
+
 ## [1.3.0] - 2026-09-24
 
 ### 新增

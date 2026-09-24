@@ -15,3 +15,4 @@ alwaysApply: true
 2. 禁止把密钥、口令、Token、真实用户数据写入任何被提交的文件。
 3. 禁止用 `--no-verify` 绕过 Git 钩子，禁止用放宽规则或注释测试的方式让检查通过。
 4. 同一事实只写一处：需求写 `SPEC.md`，决策写 `MEMORY.md`，规范写 `docs/`。
+5. 只使用仓库内技能：自研在 `skills/`，引入在 `.agents/skills/`；禁止调用个人目录下的技能。

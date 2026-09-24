@@ -32,6 +32,7 @@ const CLAUDE_ENTRY = `# Claude Code 入口
 
 - 工作流文档位于 \`docs/\`，按编号顺序阅读。
 - 自研技能位于 \`skills/\`，外部引入技能位于 \`.agents/skills/\`（来源与哈希见 \`skills-lock.json\`）。
+- **只使用仓库内技能**：禁止调用个人目录下的技能（\`~/.codex/skills\`、\`~/.claude/skills\` 等），需要新能力先引入到仓库。
 - 声称任务完成前，必须实际运行验证命令并给出命令与原始输出。
 - 禁止把密钥、口令、真实用户数据写入任何被提交的文件。
 `;
@@ -53,6 +54,7 @@ alwaysApply: true
 2. 禁止把密钥、口令、Token、真实用户数据写入任何被提交的文件。
 3. 禁止用 \`--no-verify\` 绕过 Git 钩子，禁止用放宽规则或注释测试的方式让检查通过。
 4. 同一事实只写一处：需求写 \`SPEC.md\`，决策写 \`MEMORY.md\`，规范写 \`docs/\`。
+5. 只使用仓库内技能：自研在 \`skills/\`，引入在 \`.agents/skills/\`；禁止调用个人目录下的技能。
 `;
 
 const COPILOT_ENTRY = `# Copilot 说明
@@ -64,6 +66,7 @@ const COPILOT_ENTRY = `# Copilot 说明
 - 遵循 \`docs/05-分支提交与评审.md\` 的提交信息格式：\`type(scope): subject\`。
 - 提交前运行模块校验命令，见 \`AGENTS.md\` 的命令索引。
 - 不生成包含真实密钥、口令或用户数据的示例代码。
+- 只使用仓库内技能（\`skills/\` 与 \`.agents/skills/\`），不要调用个人目录下的技能。
 - 更完整的规则见 \`AGENTS.md\` 与 \`docs/\`。
 `;
 

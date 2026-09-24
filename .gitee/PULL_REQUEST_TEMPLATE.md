@@ -38,6 +38,7 @@ mvn test
 - [ ] 未修改与任务无关的文件
 - [ ] 无密钥、口令、真实用户数据
 - [ ] 相关文档已同步（`SPEC.md` / `MEMORY.md` / `docs/` 至少一处）
+- [ ] 仅使用仓库内技能（`skills/` 与 `.agents/skills/`）；新增自研技能已登记 `skills/README.md`，引入技能已登记 `skills-lock.json`
 - [ ] 验收证据已留档，且可被他人复现
 - [ ] 已写明回滚方式
 

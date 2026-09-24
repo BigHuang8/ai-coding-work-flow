@@ -23,6 +23,7 @@
 | 外部技能版本漂移，昨天能跑今天不能跑 | `skills-lock.json` 锁定来源与哈希，见 [技能体系](docs/03-技能体系.md) |
 | 数据库口令、API Key 被写进文档并提交 | 密钥零入库 + 提交前扫描，见 [安全与密钥](docs/07-安全与密钥.md) |
 | 规范只写在文档里，没人执行 | `.githooks/` 与 `.github/workflows/` 把规范变成「失败即阻断」的检查 |
+| 各人用自己机器上的私有技能，换台机器就复现不了 | 只允许仓库内技能（`skills/` 与 `.agents/skills/`），`scripts/check-skills.mjs` 负责拦住越界来源，见 [技能体系](docs/03-技能体系.md) 第五节 |
 | 新人不知道从哪读起 | [快速开始](docs/00-快速开始.md) + [接入清单](docs/08-接入清单.md) |
 
 ## 二、三层治理模型
@@ -62,7 +63,7 @@
 │   ├── 13~15                  技术规范（后端 Java/Spring、前端 Vue3、数据库与建表）
 │   └── verification/          验收证据留档（按需求建子目录）
 ├── skills/                    自研技能：团队自己的流程能力
-├── scripts/                   可执行工具：安装钩子、注入模板、文档校验、需求建档
+├── scripts/                   可执行工具：安装钩子、注入模板、文档校验、技能自检、需求建档、任务看板
 ├── templates/project/         注入到业务项目的文件模板
 ├── skills-lock.json           外部引入技能的来源与哈希锁定
 └── （生成文件）                CLAUDE.md、.cursor/rules/、.github/copilot-instructions.md
@@ -132,6 +133,6 @@ node scripts/bootstrap.mjs --target ../your-project --stack java-springboot,vue3
 
 ---
 
-**模板版本**：1.3.0
+**模板版本**：1.4.0
 **维护者**：hqc 团队
 **最后更新**：2026-09-24
