@@ -113,8 +113,7 @@
 ├── .editorconfig              跨编辑器的基础格式约定
 ├── assets/                    流程信息图：PNG 成品与 HTML 源，再生成见 assets/README.md
 ├── .githooks/                 本地提交门禁（commit-msg / pre-commit / pre-push）
-├── .github/                   本仓库的 Copilot 指令（生成文件，与托管平台无关）
-├── .gitee/                    本仓库托管在 Gitee，所以根目录有 PR 模板；由 templates/platform 生成
+├── workflow.config.json       本仓库自身的工作流配置（当前只启用 CLAUDE.md 一个 AI 入口）
 ├── docs/                      工作流文档（中文，按编号排序阅读）
 │   ├── 00~12                  流程规范（总览、协作、评审、需求、影响面…）
 │   ├── 13~15                  技术规范（后端 Java/Spring、前端 Vue3、数据库与建表）
@@ -125,11 +124,12 @@
 ├── templates/project/         注入到业务项目的文件模板
 ├── templates/platform/        平台产物：github / gitlab / gitee 各一套，按探测结果注入
 ├── skills-lock.json           外部引入技能的来源与哈希锁定
-└── （生成文件）                CLAUDE.md、.cursor/rules/、.github/copilot-instructions.md（按 aiEntries 生成）
+└── （生成文件）                CLAUDE.md；其余入口（.cursor/rules/、.github/copilot-instructions.md）按 aiEntries 生成
 ```
 
-最后两行是自动生成的：`AGENTS.md` 是唯一事实来源，`node scripts/sync-agent-config.mjs` 负责为 Claude Code、Cursor、Copilot 生成指向它的入口，
-`node scripts/sync-platform.mjs` 负责用 `templates/platform/` 刷新仓库根的平台副本，避免多套规范各自漂移。
+最后一行是自动生成的：`AGENTS.md` 是唯一事实来源，`node scripts/sync-agent-config.mjs` 按 `workflow.config.json` 的 `aiEntries`
+生成指向它的入口（本仓库自己只启用 `CLAUDE.md`）；`node scripts/sync-platform.mjs` 负责用 `templates/platform/` 刷新仓库根的平台副本
+（本仓库当前不保留根副本，托管平台配置只在 `templates/platform/` 维护并按需注入业务项目），避免同一份产物维护两遍。
 
 ## 八、五分钟上手
 

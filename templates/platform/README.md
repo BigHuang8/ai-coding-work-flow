@@ -28,11 +28,12 @@
 
 三个平台的合并请求模板内容一致，只是落地路径不同；改了其中一个，另外两个要一起改。
 
-## 三、本仓库自己的根副本
+## 三、仓库根的「平台副本」规则
 
-本仓库托管在 Gitee，根目录的 `.gitee/` 既是本仓库自己的合并请求模板，也是 Gitee 平台的注入源。
-这类「根副本」由 `node scripts/sync-platform.mjs` 从本目录生成并校验，`--check` 已接进门禁，两处不会各自漂移。
+平台产物按需注入业务项目，**本仓库自己根目录当前一份都不保留**：GitHub / GitLab / Gitee 三套配置都只在这里维护。
+谁要是哪天需要在仓库根放一份（比如让 Gitee 上的合并请求自带模板），把那几个文件复制到根目录即可——
+`node scripts/sync-platform.mjs` 会把它当作「根副本」接管：`--check` 比对一致性（E801），不一致就拦，
+刷新时**只刷新根目录已存在的同名文件**，不主动新建，所以没有远程的平台不会平白多出配置目录。
 
-规则是**只刷新根目录已存在的同名文件**，不主动新建：本仓库没有 GitHub 远程，根目录就不该出现 `.github/workflows/`。
-`.github/copilot-instructions.md` 是 AI 工具入口（由 `AGENTS.md` 生成），不属于平台产物，不受这套规则影响；
-不用 Copilot 的项目可以在 `workflow.config.json` 的 `aiEntries` 里去掉它，`templates/` 这边无需改动。
+`.github/copilot-instructions.md`、`.cursor/rules/` 这类 AI 工具入口不属于平台产物，不受这套规则影响；
+用不到的入口在 `workflow.config.json` 的 `aiEntries` 里去掉即可，`templates/` 这边无需改动。

@@ -4,6 +4,20 @@
 
 格式参考 [Keep a Changelog](https://keepachangelog.com/zh-CN/1.1.0/)，版本号遵循语义化版本。
 
+## [1.11.2] - 2026-09-24
+
+### 变更
+
+- **模板仓库根目录不再保留平台配置与多余的 AI 入口**：删除 `.gitee/`、`.github/`、`.cursor/`，
+  根目录新增 `workflow.config.json`（`"aiEntries": ["claude"]`，只生成 `CLAUDE.md`）。
+  GitHub / GitLab / Gitee 三套平台产物仍旧只在 `templates/platform/` 维护，按业务项目的托管平台注入，
+  本仓库自己不再留一份副本；`sync-platform.mjs` 只在根副本已存在时才比对，删了不会自己长回来。
+
+### 文档
+
+- `README.md` 目录树与生成物说明、`docs/08-接入清单.md` 常见坑、`docs/09-常见问题.md` 第十八、十九节、
+  `templates/platform/README.md` 同步改写：把「本仓库自己也要留一份根副本」的说法换成「按需恢复」。
+
 ## [1.11.1] - 2026-09-24
 
 ### 修复
