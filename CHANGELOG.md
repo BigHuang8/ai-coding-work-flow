@@ -4,6 +4,21 @@
 
 格式参考 [Keep a Changelog](https://keepachangelog.com/zh-CN/1.1.0/)，版本号遵循语义化版本。
 
+## [1.11.1] - 2026-09-24
+
+### 修复
+
+- **`assets/secrets.png` 与其 HTML 源从未入库**：`.gitignore` 的 `secrets.*` 规则把这两个文件一并忽略了，
+  本地一直存在所以校验全绿，但全新克隆既看不到配图、`npm run validate` 还会报 E201 断链
+  （`README.md`、`docs/07-安全与密钥.md`、`assets/README.md` 都引用了该图）。已补
+  `!assets/secrets.png`、`!assets/src/secrets.html` 例外并入库。
+- 新增 **E308 门禁**：文档引用的文件被 `.gitignore` 忽略时报错，专治这类「本地有、克隆没有」的引用；
+  判定用一次 `git check-ignore --stdin` 批量完成（逐条起 git 进程在 Windows 上要 0.5 秒，链接多了会拖垮 pre-commit）。
+
+### 文档
+
+- `docs/09-常见问题.md` 新增第十九节：模板仓库根目录 `.gitee/` 与 `.github/` 各是什么、要不要保留、怎么删。
+
 ## [1.11.0] - 2026-09-24
 
 ### 新增

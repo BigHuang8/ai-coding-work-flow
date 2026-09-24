@@ -8,6 +8,7 @@
  *   E3xx 敏感信息不得入库
  *   E4xx 目录与文件命名必须符合规范
  *   E5xx 模板必需文件必须存在
+ *   E8xx 仓库自身一致性（平台产物副本、引用文件是否入库）
  *
  * 用法：
  *   node scripts/check-docs.mjs
@@ -16,6 +17,7 @@
 
 import { readdir, readFile, stat } from 'node:fs/promises';
 import { existsSync, readFileSync } from 'node:fs';
+import { execFileSync } from 'node:child_process';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { formatReport, formatStatistics, formatSummary } from './lib/reporter.mjs';
@@ -188,6 +190,45 @@ function isTemplateOnlyPath(relTarget) {
   );
 }
 
+/**
+ * E308：文档引用的文件被 .gitignore 忽略。
+ * 本地有文件，E201 不会报，但别人克隆后既拿不到文件又会看到断链——
+ * 「本地全绿、克隆即坏」的典型，配图 secrets.png 就曾这样漏掉。
+ * 链接扫描时先收集，全部扫完再用一次 git check-ignore --stdin 批量判定：
+ * 逐条起 git 进程在 Windows 上要 0.5 秒，链接多了会拖垮 pre-commit。
+ */
+const referencedFiles = [];
+
+function checkIgnoredReferences() {
+  if (referencedFiles.length === 0) return;
+  const rels = [...new Set(referencedFiles.map((item) => item.relTarget))];
+  const ignored = new Set();
+  try {
+    const out = execFileSync('git', ['check-ignore', '--stdin'], {
+      cwd: ROOT,
+      input: `${rels.join('\n')}\n`,
+      encoding: 'utf8',
+      stdio: ['pipe', 'pipe', 'ignore']
+    });
+    for (const line of out.split(/\r?\n/)) if (line.trim()) ignored.add(line.trim());
+  } catch (error) {
+    // 退出码 1 = 没有任何路径被忽略；128 = 当前不是 Git 仓库。两种都不报。
+    for (const line of String(error.stdout ?? '').split(/\r?\n/)) if (line.trim()) ignored.add(line.trim());
+  }
+
+  for (const item of referencedFiles) {
+    if (!ignored.has(item.relTarget)) continue;
+    issues.push({
+      ruleId: 'E308',
+      file: item.file,
+      line: item.line,
+      message: `引用文件被 .gitignore 忽略，不会入库：${item.target}`,
+      detail: '本地存在所以看不出问题，别人克隆后既拿不到文件，还会看到断链',
+      suggestion: '调整 .gitignore 规则（可加 !路径 例外），或把引用换成会入库的文件'
+    });
+  }
+}
+
 /** E2xx：相对链接有效性 */
 function checkLinks(abs, content) {
   const lines = content.split(/\r?\n/);
@@ -224,6 +265,10 @@ function checkLinks(abs, content) {
           message: `相对链接指向的文件不存在：${target}`,
           suggestion: '修正路径，或确认目标文件是否已被移动或删除'
         });
+        continue;
+      }
+      if (!relTarget.startsWith('..')) {
+        referencedFiles.push({ file: self, line: index + 1, target, relTarget });
       }
     }
   });
@@ -458,6 +503,7 @@ async function main() {
   await checkRequiredFiles();
   await checkSpecStructure();
   await checkAttributes();
+  checkIgnoredReferences();
 
   const errors = issues.filter((item) => (item.level ?? 'error') === 'error');
   const warnings = issues.filter((item) => item.level === 'warn');

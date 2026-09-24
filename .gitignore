@@ -13,6 +13,9 @@
 *.jks
 secrets/
 secrets.*
+# 例外：流程配图叫 secrets.png（讲「哪些东西别提交」的那张），不是密钥文件，必须入库
+!assets/secrets.png
+!assets/src/secrets.html
 
 # ==================== 依赖与产物 ====================
 node_modules/
