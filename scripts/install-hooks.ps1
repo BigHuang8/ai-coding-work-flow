@@ -1,4 +1,4 @@
-# 安装 Git 钩子：把 core.hooksPath 指向仓库内的 .githooks
+﻿# 安装 Git 钩子：把 core.hooksPath 指向仓库内的 .githooks
 # 用法：pwsh scripts/install-hooks.ps1
 
 $ErrorActionPreference = 'Stop'

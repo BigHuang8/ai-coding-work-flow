@@ -370,6 +370,30 @@ async function checkRequiredFiles() {
   }
 }
 
+/** E5xx：换行规则保护——.githooks 必须被 eol=lf 覆盖，否则 Linux / macOS 上的钩子会失效 */
+async function checkAttributes() {
+  const attrPath = path.join(ROOT, '.gitattributes');
+  const hooksDir = path.join(ROOT, '.githooks');
+  if (!(await exists(attrPath)) || !(await exists(hooksDir))) return;
+
+  const rules = (await readFile(attrPath, 'utf8'))
+    .split(/\r?\n/)
+    .map((line) => line.trim())
+    .filter((line) => line && !line.startsWith('#'));
+
+  const coversHooks = rules.some((line) => /^(\.githooks\/.*|\*)\s+.*eol=lf/.test(line));
+  if (coversHooks) return;
+
+  issues.push({
+    level: 'warn',
+    ruleId: 'E503',
+    file: '.gitattributes',
+    message: 'Git 钩子脚本缺少 LF 换行保护',
+    detail: 'core.autocrlf=true 的机器会把 .githooks 转成 CRLF，钩子在 Linux / macOS 上会以 bad interpreter 失败',
+    suggestion: '在 .gitattributes 补一行 .githooks/* text eol=lf，或采用模板自带的 * text=auto eol=lf'
+  });
+}
+
 async function main() {
   const argPath = (() => {
     const index = process.argv.indexOf('--path');
@@ -398,6 +422,7 @@ async function main() {
 
   await checkRequiredFiles();
   await checkSpecStructure();
+  await checkAttributes();
 
   const errors = issues.filter((item) => (item.level ?? 'error') === 'error');
   const warnings = issues.filter((item) => item.level === 'warn');

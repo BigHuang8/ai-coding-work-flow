@@ -48,7 +48,6 @@ const ENTRY_LIST = [
   { from: '.githooks', to: '.githooks' },
   { from: '.github', to: '.github' },
   { from: '.editorconfig', to: '.editorconfig' },
-  { from: '.gitattributes', to: '.gitattributes' },
   { from: '.tasksignore', to: '.tasksignore' },
   { from: 'skills-lock.json', to: 'skills-lock.json' },
   { from: 'assets', to: 'assets' }
@@ -414,6 +413,25 @@ async function main() {
     } else {
       await cp(gitignoreSource, gitignoreTarget);
       created.push('.gitignore');
+    }
+  }
+
+  // .gitattributes 单独处理：换行规则必须合并，否则 .githooks 在 Linux / macOS 上会因 CRLF 失效
+  const attrSource = path.join(ROOT, '.gitattributes');
+  const attrTarget = path.join(target, '.gitattributes');
+  if (await exists(attrSource)) {
+    if (await exists(attrTarget)) {
+      const extra = path.join(target, '.gitattributes.workflow');
+      if (!options.dryRun) {
+        await cp(attrSource, extra);
+      }
+      warnings.push('目标已存在 .gitattributes，未覆盖；模板规则写入 .gitattributes.workflow。必须合并：缺少 .githooks/* eol=lf 时，core.autocrlf=true 的机器会把钩子脚本转成 CRLF，钩子在 Linux / macOS 上直接失效');
+      created.push('.gitattributes.workflow');
+    } else if (options.dryRun) {
+      created.push('.gitattributes');
+    } else {
+      await cp(attrSource, attrTarget);
+      created.push('.gitattributes');
     }
   }
 
