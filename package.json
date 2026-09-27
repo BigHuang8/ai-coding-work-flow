@@ -1,11 +1,14 @@
 {
   "name": "hqc-ai-coding-work-flow",
-  "version": "1.0.0",
+  "version": "1.11.4",
   "private": true,
   "type": "module",
   "description": "面向团队协作的 AI 编码工作流模板",
   "scripts": {
-    "validate": "node scripts/check-docs.mjs && node scripts/check-skills.mjs && node scripts/detect-stack.mjs --check && node scripts/sync-agent-config.mjs --check && node scripts/sync-platform.mjs --check",
+    "test": "node --test scripts/tests/*.test.mjs",
+    "validate": "npm run test && node scripts/check-version.mjs && node scripts/check-docs.mjs && node scripts/check-skills.mjs && node scripts/detect-stack.mjs --check && node scripts/sync-agent-config.mjs --check && node scripts/sync-platform.mjs --check && node scripts/check-placeholders.mjs",
+    "validate:version": "node scripts/check-version.mjs",
+    "validate:placeholders": "node scripts/check-placeholders.mjs",
     "validate:docs": "node scripts/check-docs.mjs",
     "validate:skills": "node scripts/check-skills.mjs",
     "validate:stacks": "node scripts/detect-stack.mjs --check",

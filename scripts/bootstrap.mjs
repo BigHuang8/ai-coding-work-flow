@@ -300,11 +300,16 @@ async function detectPlatform(target, explicit) {
 async function renderProjectPackage(target) {
   const template = JSON.parse(await readFile(path.join(ROOT, 'package.json'), 'utf8'));
   const name = path.basename(target).toLowerCase().replace(/[^a-z0-9-_.]/g, '-');
+  const scripts = { ...template.scripts };
+  // `test` 与模板仓库的版本门禁依赖模板源目录；业务项目只接收可复用的
+  // 工作流校验，不应因为没有 templates/ 或脚本测试夹具而失败。
+  delete scripts.test;
+  scripts.validate = scripts.validate.replace(/^npm run test && /, '');
   return `${JSON.stringify({
     name: name || 'project',
     private: true,
     description: 'AI 工作流校验入口，由 hqc-ai-coding-work-flow 模板生成',
-    scripts: template.scripts,
+    scripts,
     engines: template.engines
   }, null, 2)}\n`;
 }

@@ -4,6 +4,15 @@
 
 格式参考 [Keep a Changelog](https://keepachangelog.com/zh-CN/1.1.0/)，版本号遵循语义化版本。
 
+## [1.11.4] - 2026-09-27
+
+### 修复
+
+- 统一 `package.json`、README 与 CHANGELOG 的模板版本，并新增版本一致性门禁。
+- 为 `bootstrap`、版本检查和接入占位符检查增加 Node 内置回归测试。
+- 修复无 `bash` 环境下 Git hooks 漏跑 AI 入口同步检查的问题。
+- 接入项目残留默认 `CODEOWNERS` 负责人或基础文档占位符时，统一校验会阻断提交。
+
 ## [1.11.3] - 2026-09-24
 
 ### 文档
